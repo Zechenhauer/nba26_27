@@ -21,7 +21,7 @@
 </head>
 <body class="p-4 md:p-8 font-sans min-h-screen">
 
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="max-w-[95rem] mx-auto space-y-6">
         
         <!-- HEADER -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700 pb-4 gap-4">
@@ -82,17 +82,24 @@
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
                             <tr>
-                                <th class="px-4 py-3 min-w-[50px]">Rang</th>
-                                <th class="px-4 py-3 min-w-[200px]">Team</th>
-                                <th class="px-4 py-3 min-w-[60px]">S</th>
-                                <th class="px-4 py-3 min-w-[60px]">N</th>
-                                <th class="px-4 py-3 min-w-[80px]">PCT</th>
-                                <th class="px-4 py-3 min-w-[80px]">GB</th>
-                                <th class="px-4 py-3 min-w-[80px]">STRK</th>
+                                <th class="px-3 py-3 min-w-[180px]">Team</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]" title="Wins (Siege)">S</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]" title="Losses (Niederlagen)">N</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Winning Percentage (Siegquote)">QUOTE</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]" title="Games Back (Rückstand)">RÜCK</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Home Record (Heimbilanz)">HEIM</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Away Record (Auswärtsbilanz)">AUSW</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Division Record (Divisions-Bilanz)">DIV</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Conference Record (Conference-Bilanz)">CONF</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Points Per Game (Punkte pro Spiel)">PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Opponent Points Per Game (Gegnerische Punkte pro Spiel)">OPP PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Average Point Differential (Punktedifferenz)">DIFF</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]" title="Current Streak (Aktuelle Serie)">SERIE</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Record last 10 games (Letzte 10 Spiele)">L10</th>
                             </tr>
                         </thead>
                         <tbody id="east-table-body" class="divide-y divide-slate-700/50">
-                            <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
+                            <tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -105,17 +112,24 @@
                     <table class="w-full text-left text-sm text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
                             <tr>
-                                <th class="px-4 py-3 min-w-[50px]">Rang</th>
-                                <th class="px-4 py-3 min-w-[200px]">Team</th>
-                                <th class="px-4 py-3 min-w-[60px]">S</th>
-                                <th class="px-4 py-3 min-w-[60px]">N</th>
-                                <th class="px-4 py-3 min-w-[80px]">PCT</th>
-                                <th class="px-4 py-3 min-w-[80px]">GB</th>
-                                <th class="px-4 py-3 min-w-[80px]">STRK</th>
+                                <th class="px-3 py-3 min-w-[180px]">Team</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]" title="Wins (Siege)">S</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]" title="Losses (Niederlagen)">N</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Winning Percentage (Siegquote)">QUOTE</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]" title="Games Back (Rückstand)">RÜCK</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Home Record (Heimbilanz)">HEIM</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Away Record (Auswärtsbilanz)">AUSW</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Division Record (Divisions-Bilanz)">DIV</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Conference Record (Conference-Bilanz)">CONF</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Points Per Game (Punkte pro Spiel)">PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Opponent Points Per Game (Gegnerische Punkte pro Spiel)">OPP PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Average Point Differential (Punktedifferenz)">DIFF</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]" title="Current Streak (Aktuelle Serie)">SERIE</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]" title="Record last 10 games (Letzte 10 Spiele)">L10</th>
                             </tr>
                         </thead>
                         <tbody id="west-table-body" class="divide-y divide-slate-700/50">
-                            <tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
+                            <tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -181,7 +195,6 @@
             }
         }
 
-        // Lade Spiele für 7 Tage einzeln (parallel) für maximale Zuverlässigkeit
         async function loadNbaGamesForWeek(mode = "next7") {
             const container = document.getElementById("games-container");
             container.innerHTML = '<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele für alle 7 Tage...</div>';
@@ -200,7 +213,6 @@
             }
 
             try {
-                // Alle 7 Tage parallel abfragen
                 const promises = datesToFetch.map(dateStr => 
                     fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${dateStr}`)
                         .then(res => res.json())
@@ -210,15 +222,12 @@
 
                 const results = await Promise.all(promises);
                 
-                // Duplikate entfernen (anhand Event-ID)
                 const eventMap = {};
                 results.flat().forEach(e => {
                     if (e && e.id) eventMap[e.id] = e;
                 });
 
                 nbaEvents = Object.values(eventMap);
-                
-                // Nach Datum sortieren
                 nbaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 checkLiveState();
@@ -275,7 +284,6 @@
                 return;
             }
 
-            // Spiele nach lokalem Datum gruppieren
             const groupedMap = {};
 
             nbaEvents.forEach(event => {
@@ -396,8 +404,8 @@
 
             } catch (error) {
                 console.error("Fehler beim Abrufen der NBA Standings:", error);
-                eastBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-red-400">Fehler beim Laden.</td></tr>';
-                westBody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-red-400">Fehler beim Laden.</td></tr>';
+                eastBody.innerHTML = '<tr><td colspan="14" class="px-4 py-6 text-center text-red-400">Fehler beim Laden.</td></tr>';
+                westBody.innerHTML = '<tr><td colspan="14" class="px-4 py-6 text-center text-red-400">Fehler beim Laden.</td></tr>';
             }
         }
 
@@ -405,7 +413,7 @@
             tbody.innerHTML = "";
 
             if (!entries || entries.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Keine Tabellendaten gefunden.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Keine Tabellendaten gefunden.</td></tr>';
                 return;
             }
 
@@ -419,35 +427,72 @@
                 const team = entry.team;
                 const stats = entry.stats || [];
 
-                const getStat = (name) => stats.find(s => s.name === name)?.displayValue || "-";
+                const getStat = (name) => {
+                    const found = stats.find(s => s.name === name || s.abbreviation === name || s.displayName === name);
+                    return found ? found.displayValue : null;
+                };
 
-                const rank = getStat("playoffSeed") !== "-" ? getStat("playoffSeed") : (idx + 1);
                 const wins = getStat("wins");
                 const losses = getStat("losses");
                 const pct = getStat("winPercent");
                 const gb = getStat("gamesBehind");
+                const home = getStat("Home");
+                const away = getStat("Road");
+                const div = getStat("vs. Div.");
+                const conf = getStat("vs. Conf.");
+                const ppg = getStat("avgPoints") || getStat("pointsFor") || getStat("PPG");
+                const oppPpg = getStat("avgPointsAgainst") || getStat("pointsAgainst") || getStat("OPP PPG");
+                
+                let diff = getStat("pointDifferential");
                 const streak = getStat("streak");
+                const l10 = getStat("L10") || getStat("lastTen") || getStat("L-10") || "-";
+
+                let diffFormatted = diff || '-';
+                let diffClass = "text-slate-300";
+                if (diff !== null && diff !== "-") {
+                    // Bereinige eventuelle bereits vorhandene Vorzeichen von der API, damit kein doppeltes Plus entsteht
+                    let cleanDiff = String(diff).replace(/^\+/, '');
+                    const diffNum = parseFloat(cleanDiff);
+                    if (!isNaN(diffNum)) {
+                        if (diffNum > 0) {
+                            diffFormatted = `+${cleanDiff}`;
+                            diffClass = "text-emerald-400 font-semibold";
+                        } else if (diffNum < 0) {
+                            diffFormatted = cleanDiff; // Minus-Zeichen ist schon da
+                            diffClass = "text-rose-400 font-semibold";
+                        } else {
+                            diffFormatted = "0.0";
+                        }
+                    }
+                }
 
                 const row = document.createElement("tr");
                 row.className = idx % 2 === 0 ? "bg-slate-800/40 hover:bg-slate-800/80 transition" : "bg-slate-800/20 hover:bg-slate-800/80 transition";
 
                 row.innerHTML = `
-                    <td class="px-4 py-3 font-bold ${rank <= 6 ? 'text-amber-400' : 'text-slate-400'}">${rank}</td>
-                    <td class="px-4 py-3 font-semibold text-white flex items-center gap-3">
-                        <img src="${team?.logos?.[0]?.href || ''}" class="w-6 h-6 object-contain" alt="Logo">
-                        ${team?.displayName || 'Unbekannt'}
+                    <td class="px-3 py-3 font-semibold text-white flex items-center gap-2.5">
+                        <span class="w-5 font-bold ${idx < 6 ? 'text-amber-400' : 'text-slate-400'}">${idx + 1}</span>
+                        <img src="${team?.logos?.[0]?.href || ''}" class="w-6 h-6 object-contain" alt="">
+                        <span class="truncate max-w-[140px]">${team?.displayName || 'Unbekannt'}</span>
                     </td>
-                    <td class="px-4 py-3 font-bold text-emerald-400">${wins}</td>
-                    <td class="px-4 py-3 font-bold text-red-400">${losses}</td>
-                    <td class="px-4 py-3 text-slate-300">${pct}</td>
-                    <td class="px-4 py-3 text-slate-400">${gb}</td>
-                    <td class="px-4 py-3 text-slate-300 font-medium">${streak}</td>
+                    <td class="px-2 py-3 text-center font-bold text-emerald-400">${wins || '-'}</td>
+                    <td class="px-2 py-3 text-center font-bold text-red-400">${losses || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300">${pct || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-400">${gb || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${home || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${away || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${div || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${conf || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${ppg || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${oppPpg || '-'}</td>
+                    <td class="px-2 py-3 text-center text-xs ${diffClass}">${diffFormatted}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs font-medium">${streak || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${l10}</td>
                 `;
                 tbody.appendChild(row);
             });
         }
 
-        // Beim Start alles laden
         document.addEventListener("DOMContentLoaded", () => {
             handleRangeChange();
             loadNbaStandings();
