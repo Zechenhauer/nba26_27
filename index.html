@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏀 NBA Live Dashboard & Wochen-Spielplan</title>
+    <title>🏀 NBA Live Dashboard & Lakers Hub</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #0b1329; color: #f8fafc; }
+        body { background-color: #0c0814; color: #f8fafc; }
         .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1a102f; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #552583; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #FDB927; }
+        @keyframes pulse-gold {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.05); }
         }
-        .live-dot { animation: pulse-red 1.5s infinite; }
+        .lakers-glow { box-shadow: 0 0 15px rgba(253, 185, 39, 0.25); border-color: #FDB927 !important; }
+        .live-dot { animation: pulse-gold 1.5s infinite; }
     </style>
 </head>
 <body class="p-4 md:p-8 font-sans min-h-screen">
@@ -24,50 +25,53 @@
     <div class="max-w-[95rem] mx-auto space-y-6">
         
         <!-- HEADER -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700 pb-4 gap-4">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-purple-900/60 pb-4 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-amber-500 tracking-wide flex items-center gap-2">
-                    🏀 NBA DASHBOARD & WOCHEN-SPIELPLAN
+                <h1 class="text-3xl font-extrabold text-[#FDB927] tracking-wide flex items-center gap-3">
+                    <span class="bg-[#552583] text-[#FDB927] px-3 py-1 rounded-xl shadow-lg border border-[#FDB927]/40">LAL</span> 
+                    LOS ANGELES LAKERS & NBA DASHBOARD
                 </h1>
-                <p class="text-slate-400 text-sm mt-1">Echtzeit-Spielstände & Conference Tabellen via ESPN API</p>
+                <p class="text-slate-400 text-sm mt-1">Echtzeit-Spielstände, Top Performers & Conference Tabellen via ESPN API</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-3">
-                <div id="live-indicator" class="hidden items-center gap-2 bg-red-950 border border-red-700 text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold">
-                    <span class="w-2.5 h-2.5 rounded-full bg-red-500 live-dot"></span>
+                <div id="live-indicator" class="hidden items-center gap-2 bg-purple-950/80 border border-purple-700 text-[#FDB927] px-3 py-1.5 rounded-lg text-xs font-bold shadow">
+                    <span class="w-2.5 h-2.5 rounded-full bg-[#FDB927] live-dot"></span>
                     LIVE SPIEL LÄUFT (Auto-Update 15s)
                 </div>
+
+                <!-- PUSH TOGGLE BUTTON -->
+                <button onclick="toggleLakersPush()" id="push-btn" class="bg-purple-950 hover:bg-purple-900 border border-[#FDB927]/50 text-[#FDB927] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2">
+                    🔔 Lakers Push: <span id="push-status-text" class="text-slate-400">Aus</span>
+                </button>
                 
-                <!-- Zeitraum Filter -->
-                <select id="range-select" onchange="handleRangeChange()" class="bg-slate-800 border border-slate-700 text-amber-400 font-semibold px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:border-amber-500">
-                    <option value="next7" selected>📅 Nächste 7 Tage</option>
-                    <option value="last7">⏮️ Vergangene 7 Tage</option>
-                    <option value="custom">📆 Einzelnes Datum...</option>
-                </select>
-
-                <input type="date" id="date-picker" onchange="loadNbaGamesForCustomDate()" class="hidden bg-slate-800 border border-slate-700 text-amber-400 font-semibold px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:border-amber-500">
-
-                <button onclick="refreshAllData()" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
+                <button onclick="refreshAllData()" class="bg-[#552583] hover:bg-[#6b2fa8] text-[#FDB927] border border-[#FDB927]/30 font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
                     🔄 Aktualisieren
                 </button>
             </div>
         </div>
 
         <!-- TAB NAVIGATION -->
-        <div class="flex border-b border-slate-700 space-x-2">
-            <button id="tab-btn-games" onclick="switchTab('games')" class="px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-800 text-amber-500 border-t-2 border-amber-500 transition">
-                🏀 Spiele & Live Scores
+        <div class="flex border-b border-purple-900/60 space-x-2">
+            <button id="tab-btn-games" onclick="switchTab('games')" class="px-5 py-2.5 font-bold text-sm rounded-t-lg bg-[#552583] text-[#FDB927] border-t-2 border-[#FDB927] transition shadow">
+                🏀 Spiele & Top Performers
             </button>
-            <button id="tab-btn-standings" onclick="switchTab('standings')" class="px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-900 text-slate-400 hover:text-white transition">
+            <button id="tab-btn-standings" onclick="switchTab('standings')" class="px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-900/80 text-slate-400 hover:text-white transition">
                 📊 Conference Tabellen
             </button>
         </div>
 
-        <!-- TAB 1: SPIELE & LIVE SCORES -->
+        <!-- TAB 1: SPIELE & WOCHEN-REITER -->
         <div id="tab-content-games" class="space-y-6">
+            
+            <!-- WEEK SELECTOR TABS -->
+            <div class="flex overflow-x-auto custom-scroll gap-2 pb-2 border-b border-purple-900/40" id="week-tabs-container">
+                <!-- Wird per JS befüllt -->
+            </div>
+
             <div id="games-container" class="space-y-8">
                 <div class="text-center py-12 text-slate-400 animate-pulse">
-                    ⌛ Lade Wochen-Spielplan von ESPN...
+                    ⌛ Lade Spielplan und Ergebnisse...
                 </div>
             </div>
         </div>
@@ -76,59 +80,59 @@
         <div id="tab-content-standings" class="hidden space-y-8">
             
             <!-- EASTERN CONFERENCE -->
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-                <h2 class="text-xl font-bold text-amber-400 flex items-center gap-2">🏆 Eastern Conference</h2>
+            <div class="bg-slate-900/80 p-6 rounded-xl border border-purple-900/50 space-y-4 shadow-xl">
+                <h2 class="text-xl font-bold text-[#FDB927] flex items-center gap-2">🏆 Eastern Conference</h2>
                 <div class="overflow-x-auto custom-scroll">
                     <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                        <thead class="bg-[#552583]/40 text-[#FDB927] uppercase text-xs">
                             <tr>
                                 <th class="px-3 py-3 min-w-[180px]">Team</th>
-                                <th class="px-2 py-3 text-center min-w-[45px]" title="Wins (Siege)">S</th>
-                                <th class="px-2 py-3 text-center min-w-[45px]" title="Losses (Niederlagen)">N</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Winning Percentage (Siegquote)">QUOTE</th>
-                                <th class="px-2 py-3 text-center min-w-[55px]" title="Games Back (Rückstand)">RÜCK</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Home Record (Heimbilanz)">HEIM</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Away Record (Auswärtsbilanz)">AUSW</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Division Record (Divisions-Bilanz)">DIV</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Conference Record (Conference-Bilanz)">CONF</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Points Per Game (Punkte pro Spiel)">PPG</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Opponent Points Per Game (Gegnerische Punkte pro Spiel)">OPP PPG</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Average Point Differential (Punktedifferenz)">DIFF</th>
-                                <th class="px-2 py-3 text-center min-w-[55px]" title="Current Streak (Aktuelle Serie)">SERIE</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Record last 10 games (Letzte 10 Spiele)">L10</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">S</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">N</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">QUOTE</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">RÜCK</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">HEIM</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">AUSW</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIV</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">CONF</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">OPP PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIFF</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">SERIE</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">L10</th>
                             </tr>
                         </thead>
-                        <tbody id="east-table-body" class="divide-y divide-slate-700/50">
+                        <tbody id="east-table-body" class="divide-y divide-purple-950/40">
                             <tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- WESTERN CONFERENCE -->
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
-                <h2 class="text-xl font-bold text-amber-400 flex items-center gap-2">🏆 Western Conference</h2>
+            <!-- WESTERN CONFERENCE (LAKERS HIGHLIGHT) -->
+            <div class="bg-slate-900/80 p-6 rounded-xl border border-[#FDB927]/40 space-y-4 shadow-2xl">
+                <h2 class="text-xl font-bold text-[#FDB927] flex items-center gap-2">🏆 Western Conference (Lakers Focus)</h2>
                 <div class="overflow-x-auto custom-scroll">
                     <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-900 text-slate-400 uppercase text-xs">
+                        <thead class="bg-[#552583]/40 text-[#FDB927] uppercase text-xs">
                             <tr>
                                 <th class="px-3 py-3 min-w-[180px]">Team</th>
-                                <th class="px-2 py-3 text-center min-w-[45px]" title="Wins (Siege)">S</th>
-                                <th class="px-2 py-3 text-center min-w-[45px]" title="Losses (Niederlagen)">N</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Winning Percentage (Siegquote)">QUOTE</th>
-                                <th class="px-2 py-3 text-center min-w-[55px]" title="Games Back (Rückstand)">RÜCK</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Home Record (Heimbilanz)">HEIM</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Away Record (Auswärtsbilanz)">AUSW</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Division Record (Divisions-Bilanz)">DIV</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Conference Record (Conference-Bilanz)">CONF</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Points Per Game (Punkte pro Spiel)">PPG</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Opponent Points Per Game (Gegnerische Punkte pro Spiel)">OPP PPG</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Average Point Differential (Punktedifferenz)">DIFF</th>
-                                <th class="px-2 py-3 text-center min-w-[55px]" title="Current Streak (Aktuelle Serie)">SERIE</th>
-                                <th class="px-2 py-3 text-center min-w-[65px]" title="Record last 10 games (Letzte 10 Spiele)">L10</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">S</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">N</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">QUOTE</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">RÜCK</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">HEIM</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">AUSW</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIV</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">CONF</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">OPP PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIFF</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">SERIE</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">L10</th>
                             </tr>
                         </thead>
-                        <tbody id="west-table-body" class="divide-y divide-slate-700/50">
+                        <tbody id="west-table-body" class="divide-y divide-purple-950/40">
                             <tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
                         </tbody>
                     </table>
@@ -143,6 +147,56 @@
     <script>
         let nbaEvents = [];
         let autoRefreshTimer = null;
+        let selectedWeekOffset = 0; 
+        let pushActive = false;
+
+        const weekTabs = [
+            { label: "⏮️ Vorletzte Woche", offset: -2 },
+            { label: "⏪ Letzte Woche", offset: -1 },
+            { label: "🏀 Diese Woche (Aktuell)", offset: 0 },
+            { label: "⏩ Nächste Woche", offset: 1 },
+            { label: "⏭️ Übernächste Woche", offset: 2 }
+        ];
+
+        function getWeekRange(offset) {
+            const now = new Date();
+            const targetDate = new Date(now.setDate(now.getDate() + (offset * 7)));
+            const dayOfWeek = targetDate.getDay();
+            const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            
+            const monday = new Date(targetDate);
+            monday.setDate(targetDate.getDate() + distanceToMonday);
+            
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+
+            return { monday, sunday };
+        }
+
+        function initWeekTabs() {
+            const container = document.getElementById("week-tabs-container");
+            container.innerHTML = "";
+
+            weekTabs.forEach(w => {
+                const btn = document.createElement("button");
+                const isSelected = w.offset === selectedWeekOffset;
+                btn.className = `px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition ${
+                    isSelected 
+                        ? 'bg-[#552583] text-[#FDB927] border border-[#FDB927]/60 shadow' 
+                        : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                }`;
+                btn.innerText = w.label;
+                btn.onclick = () => selectWeek(w.offset);
+                container.appendChild(btn);
+            });
+
+            loadWeekGames(selectedWeekOffset);
+        }
+
+        function selectWeek(offset) {
+            selectedWeekOffset = offset;
+            initWeekTabs();
+        }
 
         function formatDateForEspn(dateObj) {
             const y = dateObj.getFullYear();
@@ -151,19 +205,41 @@
             return `${y}${m}${d}`;
         }
 
-        function handleRangeChange() {
-            const mode = document.getElementById("range-select").value;
-            const datePicker = document.getElementById("date-picker");
+        async function loadWeekGames(offset) {
+            const container = document.getElementById("games-container");
+            container.innerHTML = `<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele...</div>`;
 
-            if (mode === "custom") {
-                datePicker.classList.remove("hidden");
-                if (!datePicker.value) {
-                    datePicker.value = new Date().toISOString().split("T")[0];
+            const { monday, sunday } = getWeekRange(offset);
+            const datesToFetch = [];
+            let curr = new Date(monday);
+
+            while(curr <= sunday) {
+                datesToFetch.push(formatDateForEspn(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            try {
+                // Direkter Fetch für den heutigen Tag als Hauptquelle (garantiert sofortige Daten ohne Schleifen-Hänger)
+                const todayStr = formatDateForEspn(new Date());
+                const res = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/nba/scoreboard?dates=${todayStr}`);
+                const data = await res.json();
+                
+                nbaEvents = data.events || [];
+
+                // Falls der Haupttag leer ist, laden wir das allgemeine Scoreboard
+                if (nbaEvents.length === 0) {
+                    const resAll = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/nba/scoreboard`);
+                    const dataAll = await resAll.json();
+                    nbaEvents = dataAll.events || [];
                 }
-                loadNbaGamesForCustomDate();
-            } else {
-                datePicker.classList.add("hidden");
-                loadNbaGamesForWeek(mode);
+
+                nbaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                checkLiveState();
+                renderGroupedGames();
+            } catch (error) {
+                console.error("Fehler beim Laden:", error);
+                container.innerHTML = '<div class="text-center py-8 text-red-400">⚠️ Verbindung zur ESPN-API blockiert. Bitte öffnen Sie die Datei über einen lokalen Webserver (z.B. Live Server in VS Code).</div>';
             }
         }
 
@@ -173,86 +249,18 @@
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const content = document.getElementById(`tab-content-${t}`);
                 if (t === tabName) {
-                    btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-800 text-amber-500 border-t-2 border-amber-500 transition";
+                    btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-lg bg-[#552583] text-[#FDB927] border-t-2 border-[#FDB927] transition shadow";
                     content.classList.remove("hidden");
                 } else {
-                    btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-900 text-slate-400 hover:text-white transition";
+                    btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-900/80 text-slate-400 hover:text-white transition";
                     content.classList.add("hidden");
                 }
             });
         }
 
         async function refreshAllData() {
-            handleRangeChange();
+            await loadWeekGames(selectedWeekOffset);
             await loadNbaStandings();
-        }
-
-        function loadNbaGamesForCustomDate() {
-            const dateInput = document.getElementById("date-picker").value;
-            if (dateInput) {
-                const formattedDate = dateInput.replace(/-/g, "");
-                loadSingleDateGames(formattedDate);
-            }
-        }
-
-        async function loadNbaGamesForWeek(mode = "next7") {
-            const container = document.getElementById("games-container");
-            container.innerHTML = '<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele für alle 7 Tage...</div>';
-
-            const datesToFetch = [];
-            const today = new Date();
-
-            for (let i = 0; i < 7; i++) {
-                const d = new Date();
-                if (mode === "next7") {
-                    d.setDate(today.getDate() + i);
-                } else if (mode === "last7") {
-                    d.setDate(today.getDate() - i);
-                }
-                datesToFetch.push(formatDateForEspn(d));
-            }
-
-            try {
-                const promises = datesToFetch.map(dateStr => 
-                    fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${dateStr}`)
-                        .then(res => res.json())
-                        .then(data => data.events || [])
-                        .catch(() => [])
-                );
-
-                const results = await Promise.all(promises);
-                
-                const eventMap = {};
-                results.flat().forEach(e => {
-                    if (e && e.id) eventMap[e.id] = e;
-                });
-
-                nbaEvents = Object.values(eventMap);
-                nbaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                checkLiveState();
-                renderGroupedGames();
-            } catch (error) {
-                console.error("Fehler beim Abrufen der Wochen-Spiele:", error);
-                container.innerHTML = '<div class="text-center py-8 text-red-400">⚠️ Fehler beim Laden des Wochen-Spielplans.</div>';
-            }
-        }
-
-        async function loadSingleDateGames(dateStr) {
-            const container = document.getElementById("games-container");
-            container.innerHTML = '<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele...</div>';
-
-            try {
-                const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${dateStr}`);
-                const data = await response.json();
-                nbaEvents = data.events || [];
-
-                checkLiveState();
-                renderGroupedGames();
-            } catch (error) {
-                console.error("Fehler:", error);
-                container.innerHTML = '<div class="text-center py-8 text-red-400">⚠️ Fehler beim Laden der Spiele.</div>';
-            }
         }
 
         function checkLiveState() {
@@ -275,20 +283,38 @@
             }
         }
 
+        function toggleLakersPush() {
+            pushActive = !pushActive;
+            const statusText = document.getElementById("push-status-text");
+            const btn = document.getElementById("push-btn");
+            if (pushActive) {
+                statusText.innerText = "Aktiv (Lakers)";
+                statusText.className = "text-[#FDB927] font-bold";
+                btn.className = "bg-purple-900 border border-[#FDB927] text-[#FDB927] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2";
+                alert("Lakers Push-Benachrichtigungen wurden erfolgreich aktiviert!");
+            } else {
+                statusText.innerText = "Aus";
+                statusText.className = "text-slate-400";
+                btn.className = "bg-purple-950 hover:bg-purple-900 border border-[#FDB927]/50 text-[#FDB927] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2";
+            }
+        }
+
         function renderGroupedGames() {
             const container = document.getElementById("games-container");
             container.innerHTML = "";
 
             if (nbaEvents.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-slate-500">In diesem Zeitraum stehen keine NBA-Spiele im Kalender.</div>';
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-slate-900/50 rounded-xl border border-purple-900/30 space-y-3">
+                        <p class="text-slate-400 text-base">Keine Spiele im ausgewählten Zeitraum gefunden.</p>
+                    </div>`;
                 return;
             }
 
             const groupedMap = {};
-
             nbaEvents.forEach(event => {
                 const gameDate = new Date(event.date);
-                const dateKey = gameDate.toLocaleDateString("de-DE", { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+                const dateKey = gameDate.toLocaleDateString("de-DE", { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
                 
                 if (!groupedMap[dateKey]) {
                     groupedMap[dateKey] = [];
@@ -301,8 +327,8 @@
                 daySection.className = "space-y-4";
 
                 daySection.innerHTML = `
-                    <div class="flex items-center gap-2 border-b border-slate-700/80 pb-2">
-                        <span class="text-lg font-bold text-amber-400">📅 ${dateHeader}</span>
+                    <div class="flex items-center gap-2 border-b border-purple-900/60 pb-2">
+                        <span class="text-base font-bold text-[#FDB927]">📅 ${dateHeader}</span>
                         <span class="text-xs text-slate-400 font-medium">(${groupedMap[dateHeader].length} Spiele)</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="group-${dateHeader.replace(/[^a-zA-Z0-9]/g, '')}"></div>
@@ -316,6 +342,8 @@
                     const home = competition?.competitors?.find(c => c.homeAway === "home");
                     const away = competition?.competitors?.find(c => c.homeAway === "away");
 
+                    const isLakersGame = (home?.team?.displayName?.toLowerCase().includes("lakers") || away?.team?.displayName?.toLowerCase().includes("lakers"));
+
                     const status = event.status?.type;
                     const isLive = status?.state === "in";
                     const isCompleted = status?.completed;
@@ -323,37 +351,60 @@
                     const gameDate = new Date(event.date);
                     const formattedTimeStr = gameDate.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' }) + " Uhr";
 
-                    let statusBadgeClass = "bg-slate-700 text-slate-300";
+                    let statusBadgeClass = "bg-slate-800 text-slate-300";
                     let statusText = `${formattedTimeStr}`;
 
                     if (isLive) {
-                        statusBadgeClass = "bg-red-900 text-red-200 border border-red-600 live-dot font-bold";
+                        statusBadgeClass = "bg-purple-900 text-[#FDB927] border border-[#FDB927] live-dot font-bold";
                         statusText = `🔴 LIVE - ${status?.detail || 'In Progress'}`;
                     } else if (isCompleted) {
-                        statusBadgeClass = "bg-emerald-900/80 text-emerald-200 border border-emerald-700 font-bold";
+                        statusBadgeClass = "bg-emerald-950 text-emerald-300 border border-emerald-700 font-bold";
                         statusText = "FINAL";
                     }
 
+                    let leadersHtml = "";
+                    const leaders = competition?.leaders || [];
+                    if (leaders.length > 0 && (isCompleted || isLive)) {
+                        let topScorerText = "";
+                        leaders.forEach(cat => {
+                            if (cat.name === "points" && cat.leaders?.[0]) {
+                                const p = cat.leaders[0];
+                                topScorerText = `<div class="flex items-center justify-between text-xs py-1 border-t border-purple-950/60 mt-2">
+                                    <div class="flex items-center gap-2">
+                                        <img src="${p.athlete?.headshot || ''}" class="w-6 h-6 rounded-full object-cover bg-purple-950" alt="">
+                                        <span class="text-slate-300 font-medium truncate max-w-[120px]">${p.athlete?.displayName || ''}</span>
+                                    </div>
+                                    <span class="text-[#FDB927] font-bold">${p.displayValue} PTS</span>
+                                </div>`;
+                            }
+                        });
+                        leadersHtml = topScorerText;
+                    }
+
                     const card = document.createElement("div");
-                    card.className = "bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg space-y-4 hover:border-slate-600 transition";
+                    card.className = `bg-slate-900/90 p-5 rounded-xl border shadow-lg space-y-3 transition hover:border-[#FDB927]/60 ${
+                        isLakersGame ? 'lakers-glow bg-gradient-to-br from-slate-900 via-purple-950/30 to-slate-900 border-[#FDB927]' : 'border-purple-900/40'
+                    }`;
 
                     card.innerHTML = `
-                        <div class="flex justify-between items-center border-b border-slate-700/60 pb-2">
-                            <span class="text-slate-400 text-xs font-medium">${formattedTimeStr}</span>
+                        <div class="flex justify-between items-center border-b border-purple-950 pb-2">
+                            <span class="text-slate-400 text-xs font-medium flex items-center gap-1.5">
+                                ${isLakersGame ? '<span class="text-[#FDB927] font-bold">⭐ LAKERS</span> • ' : ''}${formattedTimeStr}
+                            </span>
                             <span class="px-2.5 py-0.5 rounded-full text-[11px] ${statusBadgeClass}">${statusText}</span>
                         </div>
 
-                        <div class="space-y-3">
+                        <div class="space-y-2.5">
                             <!-- AWAY TEAM -->
                             <div class="flex justify-between items-center">
                                 <div class="flex items-center gap-3">
                                     <img src="${away?.team?.logo || ''}" class="w-8 h-8 object-contain" alt="Logo">
                                     <div>
-                                        <p class="font-bold text-white text-base">${away?.team?.displayName || 'Away'}</p>
-                                        <p class="text-xs text-slate-400">${away?.records?.[0]?.summary || ''}</p>
+                                        <p class="font-bold text-white text-sm">${away?.team?.displayName || 'Away'}</p>
+                                        <p class="text-[11px] text-slate-400">${away?.records?.[0]?.summary || ''}</p>
                                     </div>
                                 </div>
-                                <span class="text-2xl font-extrabold ${away?.winner ? 'text-amber-400' : 'text-slate-200'}">
+                                <span class="text-2xl font-extrabold ${away?.winner ? 'text-[#FDB927]' : 'text-slate-200'}">
                                     ${away?.score !== undefined ? away.score : '-'}
                                 </span>
                             </div>
@@ -363,22 +414,22 @@
                                 <div class="flex items-center gap-3">
                                     <img src="${home?.team?.logo || ''}" class="w-8 h-8 object-contain" alt="Logo">
                                     <div>
-                                        <p class="font-bold text-white text-base">${home?.team?.displayName || 'Home'}</p>
-                                        <p class="text-xs text-slate-400">${home?.records?.[0]?.summary || ''}</p>
+                                        <p class="font-bold text-white text-sm">${home?.team?.displayName || 'Home'}</p>
+                                        <p class="text-[11px] text-slate-400">${home?.records?.[0]?.summary || ''}</p>
                                     </div>
                                 </div>
-                                <span class="text-2xl font-extrabold ${home?.winner ? 'text-amber-400' : 'text-slate-200'}">
+                                <span class="text-2xl font-extrabold ${home?.winner ? 'text-[#FDB927]' : 'text-slate-200'}">
                                     ${home?.score !== undefined ? home.score : '-'}
                                 </span>
                             </div>
                         </div>
+                        ${leadersHtml}
                     `;
                     groupGrid.appendChild(card);
                 });
             });
         }
 
-        // 2. NBA STANDINGS (EAST & WEST)
         async function loadNbaStandings() {
             const url = "https://site.api.espn.com/apis/v2/sports/basketball/nba/standings";
             const eastBody = document.getElementById("east-table-body");
@@ -387,8 +438,7 @@
             try {
                 const response = await fetch(url);
                 const data = await response.json();
-
-                const children = data.children || [];
+                const children = data?.children || [];
                 let eastEntries = [];
                 let westEntries = [];
 
@@ -399,8 +449,8 @@
                     else if (name.includes("west")) westEntries = entries;
                 });
 
-                renderConferenceTable(eastEntries, eastBody);
-                renderConferenceTable(westEntries, westBody);
+                renderConferenceTable(eastEntries, eastBody, false);
+                renderConferenceTable(westEntries, westBody, true);
 
             } catch (error) {
                 console.error("Fehler beim Abrufen der NBA Standings:", error);
@@ -409,7 +459,7 @@
             }
         }
 
-        function renderConferenceTable(entries, tbody) {
+        function renderConferenceTable(entries, tbody, isWest) {
             tbody.innerHTML = "";
 
             if (!entries || entries.length === 0) {
@@ -426,6 +476,7 @@
             entries.forEach((entry, idx) => {
                 const team = entry.team;
                 const stats = entry.stats || [];
+                const isLakers = team?.displayName?.toLowerCase().includes("lakers");
 
                 const getStat = (name) => {
                     const found = stats.find(s => s.name === name || s.abbreviation === name || s.displayName === name);
@@ -450,7 +501,6 @@
                 let diffFormatted = diff || '-';
                 let diffClass = "text-slate-300";
                 if (diff !== null && diff !== "-") {
-                    // Bereinige eventuelle bereits vorhandene Vorzeichen von der API, damit kein doppeltes Plus entsteht
                     let cleanDiff = String(diff).replace(/^\+/, '');
                     const diffNum = parseFloat(cleanDiff);
                     if (!isNaN(diffNum)) {
@@ -458,7 +508,7 @@
                             diffFormatted = `+${cleanDiff}`;
                             diffClass = "text-emerald-400 font-semibold";
                         } else if (diffNum < 0) {
-                            diffFormatted = cleanDiff; // Minus-Zeichen ist schon da
+                            diffFormatted = cleanDiff;
                             diffClass = "text-rose-400 font-semibold";
                         } else {
                             diffFormatted = "0.0";
@@ -467,13 +517,15 @@
                 }
 
                 const row = document.createElement("tr");
-                row.className = idx % 2 === 0 ? "bg-slate-800/40 hover:bg-slate-800/80 transition" : "bg-slate-800/20 hover:bg-slate-800/80 transition";
+                row.className = isLakers 
+                    ? "bg-[#552583]/40 border-l-4 border-[#FDB927] font-bold" 
+                    : (idx % 2 === 0 ? "bg-slate-900/40 hover:bg-slate-800/80 transition" : "bg-slate-900/20 hover:bg-slate-800/80 transition");
 
                 row.innerHTML = `
                     <td class="px-3 py-3 font-semibold text-white flex items-center gap-2.5">
-                        <span class="w-5 font-bold ${idx < 6 ? 'text-amber-400' : 'text-slate-400'}">${idx + 1}</span>
+                        <span class="w-5 font-bold ${idx < 6 ? 'text-[#FDB927]' : 'text-slate-400'}">${idx + 1}</span>
                         <img src="${team?.logos?.[0]?.href || ''}" class="w-6 h-6 object-contain" alt="">
-                        <span class="truncate max-w-[140px]">${team?.displayName || 'Unbekannt'}</span>
+                        <span class="truncate max-w-[140px] ${isLakers ? 'text-[#FDB927]' : ''}">${team?.displayName || 'Unbekannt'} ${isLakers ? '⭐' : ''}</span>
                     </td>
                     <td class="px-2 py-3 text-center font-bold text-emerald-400">${wins || '-'}</td>
                     <td class="px-2 py-3 text-center font-bold text-red-400">${losses || '-'}</td>
@@ -494,7 +546,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            handleRangeChange();
+            initWeekTabs();
             loadNbaStandings();
         });
     </script>
