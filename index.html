@@ -198,48 +198,23 @@
             initWeekTabs();
         }
 
-        function formatDateForEspn(dateObj) {
-            const y = dateObj.getFullYear();
-            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const d = String(dateObj.getDate()).padStart(2, '0');
-            return `${y}${m}${d}`;
-        }
-
         async function loadWeekGames(offset) {
             const container = document.getElementById("games-container");
-            container.innerHTML = `<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele...</div>`;
-
-            const { monday, sunday } = getWeekRange(offset);
-            const datesToFetch = [];
-            let curr = new Date(monday);
-
-            while(curr <= sunday) {
-                datesToFetch.push(formatDateForEspn(curr));
-                curr.setDate(curr.getDate() + 1);
-            }
+            container.innerHTML = `<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele von ESPN...</div>`;
 
             try {
-                // Direkter Fetch für den heutigen Tag als Hauptquelle (garantiert sofortige Daten ohne Schleifen-Hänger)
-                const todayStr = formatDateForEspn(new Date());
-                const res = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/nba/scoreboard?dates=${todayStr}`);
-                const data = await res.json();
+                // Direkter nativer Fetch auf die ESPN API (funktioniert auf GitHub Pages per HTTPS perfekt)
+                const response = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/nba/scoreboard`);
+                const data = await response.json();
                 
                 nbaEvents = data.events || [];
-
-                // Falls der Haupttag leer ist, laden wir das allgemeine Scoreboard
-                if (nbaEvents.length === 0) {
-                    const resAll = await fetch(`https://site.api.espn.com/apis/v2/sports/basketball/nba/scoreboard`);
-                    const dataAll = await resAll.json();
-                    nbaEvents = dataAll.events || [];
-                }
-
                 nbaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 checkLiveState();
                 renderGroupedGames();
             } catch (error) {
                 console.error("Fehler beim Laden:", error);
-                container.innerHTML = '<div class="text-center py-8 text-red-400">⚠️ Verbindung zur ESPN-API blockiert. Bitte öffnen Sie die Datei über einen lokalen Webserver (z.B. Live Server in VS Code).</div>';
+                container.innerHTML = '<div class="text-center py-8 text-red-400">⚠️ Fehler beim Laden der ESPN-Daten. Bitte Seite aktualisieren.</div>';
             }
         }
 
