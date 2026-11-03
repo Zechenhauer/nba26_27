@@ -108,7 +108,7 @@
                 🏀 Alle NBA Spiele
             </button>
             <button id="tab-btn-top30" onclick="switchTab('top30')" class="px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-900/80 text-slate-400 hover:text-white transition whitespace-nowrap">
-                ⭐ NBA Top 30 Ranking
+                ⭐ NBA Top Spieler-Ranking
             </button>
             <button id="tab-btn-celtics" onclick="switchTab('celtics')" class="px-5 py-2.5 font-bold text-sm rounded-t-lg bg-slate-900/80 text-slate-400 hover:text-white transition whitespace-nowrap">
                 🍀 Celtics Saison-Spielplan (Komplett)
@@ -127,12 +127,12 @@
             </div>
         </div>
 
-        <!-- TAB 2: TOP 30 RANKING -->
+        <!-- TAB 2: TOP SPIELER RANKING -->
         <div id="tab-content-top30" class="hidden space-y-6">
             <div class="bg-slate-900/90 p-6 rounded-xl border border-[#007A33]/50 shadow-2xl space-y-4">
                 <div class="flex justify-between items-center border-b border-emerald-900/50 pb-3">
                     <h2 class="text-xl font-extrabold text-[#BA9653] flex items-center gap-2">
-                        ⭐ NBA Top 30 Spieler-Ranking
+                        ⭐ NBA Top Spieler-Ranking
                     </h2>
                     <span class="text-xs bg-[#007A33] text-white px-3 py-1 rounded-full font-bold border border-[#BA9653]/40">Klicke auf einen Spieler für Details</span>
                 </div>
@@ -153,7 +153,7 @@
                     </h2>
                     <span class="text-xs bg-[#007A33] text-white px-3 py-1 rounded-full font-bold border border-[#BA9653]/40">Alle Termine</span>
                 </div>
-                <p class="text-sm text-slate-300">Alle Partien der Celtics with originalen Team-Logos, Heim/Auswärts-Kennzeichnung und Ergebnissen:</p>
+                <p class="text-sm text-slate-300">Alle Partien der Celtics mit originalen Team-Logos, Heim/Auswärts-Kennzeichnung und Ergebnissen:</p>
                 
                 <div id="celtics-static-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                     <!-- Wird per JS befüllt -->
@@ -228,44 +228,82 @@
 
     </div>
 
-    <!-- POP-UP MODAL FÜR SPIELERDETAILS MIT FOTO -->
+    <!-- POP-UP MODAL FÜR SPIELERDETAILS (Saison-Stats + Letztes Spiel) -->
     <div id="player-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border-2 border-[#007A33] rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4 celtics-glow">
+        <div class="bg-slate-900 border-2 border-[#007A33] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-5 celtics-glow">
             <button onclick="closePlayerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
             
+            <!-- Header mit Foto & Name -->
             <div class="flex items-center gap-4 border-b border-emerald-950 pb-4">
                 <div class="w-16 h-16 rounded-full bg-emerald-950 flex items-center justify-center border-2 border-[#BA9653] overflow-hidden shrink-0 shadow-lg">
                     <img id="modal-player-img" src="" class="w-full h-full object-cover" alt="Spielerfoto">
                 </div>
                 <div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs bg-[#007A33] text-white px-2 py-0.5 rounded font-bold" id="modal-player-rank">#1</span>
-                        <h3 class="text-xl font-black text-white" id="modal-player-name">Nikola Jokic</h3>
+                    <h3 class="text-xl font-black text-white" id="modal-player-name">Name</h3>
+                    <p class="text-xs text-[#BA9653] mt-0.5" id="modal-player-team">Team</p>
+                </div>
+            </div>
+
+            <!-- KACHEL 1: 2026-27 REGULAR SEASON STATS -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs text-[#BA9653] font-bold uppercase tracking-wider border-b border-emerald-900/40 pb-1">
+                    <span>2026-27 Regular Season Stats</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/60">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">PTS</p>
+                        <p class="text-base font-black text-[#BA9653]" id="modal-stat-pts">0.0</p>
                     </div>
-                    <p class="text-xs text-[#BA9653] mt-1" id="modal-player-team-pos">DEN • Center (C1)</p>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/60">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">REB</p>
+                        <p class="text-base font-black text-white" id="modal-stat-reb">0.0</p>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/60">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">AST</p>
+                        <p class="text-base font-black text-white" id="modal-stat-ast">0.0</p>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/60">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">FG%</p>
+                        <p class="text-base font-black text-emerald-400" id="modal-stat-fg">0.0</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 text-center">
-                <div class="bg-slate-950 p-3 rounded-xl border border-emerald-900/60">
-                    <p class="text-[10px] uppercase font-bold text-slate-400">PPG</p>
-                    <p class="text-lg font-black text-[#BA9653]" id="modal-stat-ppg">29.7</p>
+            <!-- KACHEL 2: LETZTES SPIEL -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-emerald-900/40 pb-1">
+                    <span>Letztes Spiel</span>
+                    <span class="text-[10px] text-emerald-400" id="modal-last-status">Final</span>
                 </div>
-                <div class="bg-slate-950 p-3 rounded-xl border border-emerald-900/60">
-                    <p class="text-[10px] uppercase font-bold text-slate-400">RPG</p>
-                    <p class="text-lg font-black text-emerald-400" id="modal-stat-rpg">13.7</p>
+                <!-- Mini-Scoreboard Box -->
+                <div class="bg-slate-950 p-3 rounded-xl border border-emerald-900/60 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <img id="modal-last-opp-logo" src="" class="w-6 h-6 object-contain" alt="Gegner">
+                        <span class="text-xs font-bold text-white" id="modal-last-matchup">Team vs Opponent</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-black text-white" id="modal-last-score">118 - 110</span>
+                    </div>
                 </div>
-                <div class="bg-slate-950 p-3 rounded-xl border border-emerald-900/60">
-                    <p class="text-[10px] uppercase font-bold text-slate-400">APG</p>
-                    <p class="text-lg font-black text-white" id="modal-stat-apg">11.7</p>
+                <!-- Werte-Grid für Letztes Spiel -->
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/40">
+                        <p class="text-[9px] uppercase text-slate-400">PTS</p>
+                        <p class="text-sm font-bold text-[#BA9653]" id="modal-last-pts">0</p>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/40">
+                        <p class="text-[9px] uppercase text-slate-400">REB</p>
+                        <p class="text-sm font-bold text-white" id="modal-last-reb">0</p>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/40">
+                        <p class="text-[9px] uppercase text-slate-400">AST</p>
+                        <p class="text-sm font-bold text-white" id="modal-last-ast">0</p>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-emerald-900/40">
+                        <p class="text-[9px] uppercase text-slate-400">+/-</p>
+                        <p class="text-sm font-bold text-emerald-400" id="modal-last-plus">+0</p>
+                    </div>
                 </div>
-            </div>
-
-            <div class="bg-slate-950 p-4 rounded-xl border border-emerald-900/40 space-y-2 text-xs text-slate-300">
-                <div class="flex justify-between"><span>Wurfquote (FG%):</span> <span class="font-bold text-white" id="modal-stat-fg">58.3%</span></div>
-                <div class="flex justify-between"><span>Steals pro Spiel:</span> <span class="font-bold text-white" id="modal-stat-spg">1.4</span></div>
-                <div class="flex justify-between"><span>Blocks pro Spiel:</span> <span class="font-bold text-white" id="modal-stat-bpg">0.9</span></div>
-                <div class="flex justify-between"><span>Effizienz-Rating:</span> <span class="font-bold text-[#BA9653]" id="modal-stat-eff">35.2</span></div>
             </div>
 
             <button onclick="closePlayerModal()" class="w-full bg-[#007A33] hover:bg-[#006228] text-white font-bold py-2.5 rounded-xl transition shadow">
@@ -287,40 +325,38 @@
             "DEN": "den", "SA": "sas", "OKC": "okc", "LAL": "lal", "PHI": "phi",
             "CLE": "cle", "BOS": "bos", "ATL": "atl", "DAL": "dal", "DET": "det",
             "IND": "ind", "MEM": "mem", "HOU": "hou", "MIN": "min", "TOR": "tor",
-            "WSH": "was", "NY": "nyk", "MIA": "mia", "CHA": "cha", "PHX": "phx"
+            "WSH": "was", "NY": "nyk", "MIA": "mia", "CHA": "cha", "PHX": "phx",
+            "SAC": "sac", "ORL": "orl", "MIL": "mil", "NOP": "nop", "CHI": "chi",
+            "BKN": "bkn", "UTA": "uta", "POR": "por", "LAC": "lac", "GSW": "gsw"
         };
 
+        // Die 25 Spieler mit Saisonwerten und Beispieldaten für das letzte Spiel (als stabiler Fallback)
         const top30Players = [
-            { rank: 1, id: "3112335", name: "Nikola Jokic", team: "DEN", pos: "C1", ppg: "29.7", rpg: "13.7", apg: "11.7", fg: "58.3%", spg: "1.4", bpg: "0.9", eff: "35.2" },
-            { rank: 2, id: "5104157", name: "Victor Wembanyama", team: "SA", pos: "C2", ppg: "24.3", rpg: "11.0", apg: "3.8", fg: "46.5%", spg: "1.2", bpg: "3.8", eff: "28.4" },
-            { rank: 3, id: "4432158", name: "Shai Gilgeous-Alexander", team: "OKC", pos: "PG1", ppg: "31.2", rpg: "5.5", apg: "6.2", fg: "53.5%", spg: "2.1", bpg: "0.9", eff: "31.0" },
-            { rank: 4, id: "3945274", name: "Luka Doncic", team: "LAL", pos: "PG2", ppg: "33.9", rpg: "9.2", apg: "9.8", fg: "48.7%", spg: "1.4", bpg: "0.5", eff: "33.5" },
-            { rank: 5, id: "4431678", name: "Tyrese Maxey", team: "PHI", pos: "PG3 & SG", ppg: "25.9", rpg: "3.3", apg: "6.2", fg: "44.8%", spg: "1.0", bpg: "0.5", eff: "24.2" },
-            { rank: 6, id: "4277956", name: "Donovan Mitchell", team: "CLE", pos: "SG1 & PG", ppg: "26.5", rpg: "5.1", apg: "6.1", fg: "46.2%", spg: "1.8", bpg: "0.3", eff: "26.0" },
-            { rank: 7, id: "4065648", name: "Jayson Tatum", team: "BOS", pos: "PF1 & SF", ppg: "28.3", rpg: "8.1", apg: "4.9", fg: "47.1%", spg: "1.1", bpg: "0.6", eff: "29.1" },
-            { rank: 8, id: "4432161", name: "Jalen Johnson", team: "ATL", pos: "PF2", ppg: "16.0", rpg: "8.7", spg: "1.2", apg: "3.6", fg: "51.0%", bpg: "0.8", eff: "20.5" },
-            { rank: 9, id: "5041939", name: "Cooper Flagg", team: "DAL", pos: "SF1 & PF", ppg: "21.0", rpg: "7.5", apg: "4.0", fg: "49.0%", spg: "1.5", bpg: "1.5", eff: "23.0" },
-            { rank: 10, id: "4432166", name: "Cade Cunningham", team: "DET", pos: "PG4", ppg: "22.7", rpg: "4.3", apg: "7.5", fg: "44.9%", spg: "0.9", bpg: "0.4", eff: "22.4" },
-            { rank: 11, id: "4395651", name: "Tyrese Haliburton", team: "IND", pos: "PG5 & SG", ppg: "20.1", rpg: "3.9", apg: "10.9", fg: "47.7%", spg: "1.2", bpg: "0.7", eff: "25.6" },
-            { rank: 12, id: "4066259", name: "Ty Jerome", team: "MEM", pos: "SG2 & PG", ppg: "12.4", rpg: "2.5", apg: "4.1", fg: "51.2%", spg: "1.1", bpg: "0.2", eff: "15.0" },
-            { rank: 13, id: "4431680", name: "Amen Thompson", team: "HOU", pos: "SF2 & SG", ppg: "9.5", rpg: "6.6", apg: "2.6", fg: "53.6%", spg: "1.3", bpg: "0.6", eff: "16.8" },
-            { rank: 14, id: "4432816", name: "LaMelo Ball", team: "MIN", pos: "PG6", ppg: "23.9", rpg: "5.1", apg: "8.0", fg: "43.3%", spg: "1.8", bpg: "0.2", eff: "23.1" },
-            { rank: 15, id: "4432164", name: "Scottie Barnes", team: "TOR", pos: "SF3 & SG", ppg: "19.9", rpg: "8.2", apg: "6.1", fg: "47.4%", spg: "1.3", bpg: "1.5", eff: "23.9" },
-            { rank: 16, id: "4065651", name: "Derrick White", team: "BOS", pos: "SG3 & PG", ppg: "15.2", rpg: "4.2", apg: "5.1", fg: "46.1%", spg: "1.2", bpg: "1.2", eff: "18.5" },
-            { rank: 17, id: "3136195", name: "Anthony Davis", team: "WSH", pos: "C3 & PF", ppg: "24.7", rpg: "12.6", apg: "3.5", fg: "55.6%", spg: "1.2", bpg: "2.3", eff: "30.2" },
-            { rank: 18, id: "6583", name: "Karl-Anthony Towns", team: "NY", pos: "C4", ppg: "21.8", rpg: "11.5", apg: "3.0", fg: "50.4%", spg: "0.8", bpg: "0.7", eff: "26.4" },
-            { rank: 19, id: "3032977", name: "Giannis Antetokounmpo", team: "MIA", pos: "PF3 & C", ppg: "30.4", rpg: "11.9", apg: "6.5", fg: "61.1%", spg: "1.2", bpg: "1.2", eff: "34.0" },
-            { rank: 20, id: "4277905", name: "Jamal Murray", team: "DEN", pos: "PG7", ppg: "21.2", rpg: "4.1", apg: "6.5", fg: "48.1%", spg: "1.0", bpg: "0.4", eff: "21.0" },
-            { rank: 21, id: "4396971", name: "Naz Reid", team: "CHA", pos: "C5 & PF", ppg: "13.5", rpg: "5.2", apg: "1.5", fg: "47.7%", spg: "0.7", bpg: "0.9", eff: "15.2" },
-            { rank: 22, id: "4066261", name: "Bam Adebayo", team: "MIA", pos: "C6 & PF", ppg: "19.3", rpg: "10.4", apg: "3.9", fg: "52.1%", spg: "1.1", bpg: "0.9", eff: "24.8" },
-            { rank: 23, id: "4395725", name: "Nickeil Alexander-Walker", team: "ATL", pos: "SG4 & PG", ppg: "8.0", rpg: "2.0", apg: "2.5", fg: "43.0%", spg: "0.9", bpg: "0.5", eff: "11.0" },
-            { rank: 24, id: "4431679", name: "Evan Mobley", team: "CLE", pos: "PF4 & C", ppg: "18.6", rpg: "9.4", apg: "3.2", fg: "58.0%", spg: "0.9", bpg: "1.6", eff: "24.5" },
-            { rank: 25, id: "3149673", name: "Pascal Siakam", team: "IND", pos: "PF5", ppg: "21.7", rpg: "7.1", apg: "4.3", fg: "53.9%", spg: "0.8", bpg: "0.3", eff: "23.6" },
-            { rank: 26, id: "4432165", name: "Dyson Daniels", team: "ATL", pos: "SG5 & PG", ppg: "13.8", rpg: "5.8", apg: "4.5", fg: "45.0%", spg: "3.0", bpg: "0.4", eff: "19.5" },
-            { rank: 27, id: "6450", name: "Kevin Durant", team: "HOU", pos: "PF6 & SF", ppg: "27.1", rpg: "6.6", apg: "5.0", fg: "52.3%", spg: "0.8", bpg: "1.2", eff: "28.5" },
-            { rank: 28, id: "4871144", name: "Alperen Sengun", team: "HOU", pos: "C7", ppg: "21.1", rpg: "10.3", apg: "4.9", fg: "53.7%", spg: "1.2", bpg: "0.7", eff: "26.8" },
-            { rank: 29, id: "3992", name: "James Harden", team: "CLE", pos: "PG8 & SG", ppg: "16.6", rpg: "5.1", apg: "8.5", fg: "41.0%", spg: "1.1", bpg: "0.8", eff: "21.2" },
-            { rank: 30, id: "3975", name: "Devin Booker", team: "PHX", pos: "PG9 & SG", ppg: "27.1", rpg: "4.5", apg: "6.9", fg: "46.5%", spg: "0.9", bpg: "0.4", eff: "26.5" }
+            { rank: 1, id: "3112335", name: "Nikola Jokic", team: "DEN", pos: "Center", ppg: "29.7", rpg: "13.7", apg: "11.7", fg: "58.3%", lastMatch: "vs. Trail Blazers", lastScore: "118 - 110", lastPts: "26", lastReb: "9", lastAst: "8", lastPlus: "-3" },
+            { rank: 2, id: "4278073", name: "Shai Gilgeous-Alexander", team: "OKC", pos: "Guard", ppg: "31.2", rpg: "5.5", apg: "6.2", fg: "53.5%", lastMatch: "vs. Pelicans", lastScore: "120 - 112", lastPts: "35", lastReb: "6", lastAst: "7", lastPlus: "+14" },
+            { rank: 3, id: "3945274", name: "Luka Doncic", team: "LAL", pos: "Guard", ppg: "33.9", rpg: "9.2", apg: "9.8", fg: "48.7%", lastMatch: "@ Suns", lastScore: "128 - 122", lastPts: "38", lastReb: "10", lastAst: "11", lastPlus: "+12" },
+            { rank: 4, id: "5104157", name: "Victor Wembanyama", team: "SA", pos: "Center", ppg: "24.3", rpg: "11.0", apg: "3.8", fg: "46.5%", lastMatch: "vs. Jazz", lastScore: "115 - 105", lastPts: "28", lastReb: "12", lastAst: "4", lastPlus: "+8" },
+            { rank: 5, id: "4701230", name: "Jalen Johnson", team: "ATL", pos: "Forward", ppg: "16.0", rpg: "8.7", apg: "3.6", fg: "51.0%", lastMatch: "@ Knicks", lastScore: "110 - 116", lastPts: "20", lastReb: "9", lastAst: "4", lastPlus: "+2" },
+            { rank: 6, id: "3032977", name: "Giannis Antetokounmpo", team: "MIA", pos: "Forward", ppg: "30.4", rpg: "11.9", apg: "6.5", fg: "61.1%", lastMatch: "vs. Bucks", lastScore: "125 - 118", lastPts: "32", lastReb: "12", lastAst: "5", lastPlus: "+10" },
+            { rank: 7, id: "4432166", name: "Cade Cunningham", team: "DET", pos: "Guard", ppg: "22.7", rpg: "4.3", apg: "7.5", fg: "44.9%", lastMatch: "vs. Bulls", lastScore: "105 - 108", lastPts: "24", lastReb: "5", lastAst: "8", lastPlus: "-2" },
+            { rank: 8, id: "4065648", name: "Jayson Tatum", team: "BOS", pos: "Forward", ppg: "28.3", rpg: "8.1", apg: "4.9", fg: "47.1%", lastMatch: "@ Pacers", lastScore: "129 - 124", lastPts: "29", lastReb: "8", lastAst: "6", lastPlus: "+15" },
+            { rank: 9, id: "5041939", name: "Cooper Flagg", team: "DAL", pos: "Forward", ppg: "21.0", rpg: "7.5", apg: "4.0", fg: "49.0%", lastMatch: "vs. Kings", lastScore: "112 - 108", lastPts: "22", lastReb: "8", lastAst: "3", lastPlus: "+5" },
+            { rank: 10, id: "4431678", name: "Tyrese Maxey", team: "PHI", pos: "Guard", ppg: "25.9", rpg: "3.3", apg: "6.2", fg: "44.8%", lastMatch: "@ Raptors", lastScore: "114 - 109", lastPts: "27", lastReb: "4", lastAst: "7", lastPlus: "+6" },
+            { rank: 11, id: "3908809", name: "Donovan Mitchell", team: "CLE", pos: "Guard", ppg: "26.5", rpg: "5.1", apg: "6.1", fg: "46.2%", lastMatch: "vs. Magic", lastScore: "120 - 110", lastPts: "29", lastReb: "5", lastAst: "6", lastPlus: "+9" },
+            { rank: 12, id: "3136193", name: "Devin Booker", team: "PHX", pos: "Guard", ppg: "27.1", rpg: "4.5", apg: "6.9", fg: "46.5%", lastMatch: "vs. Lakers", lastScore: "122 - 128", lastPts: "31", lastReb: "4", lastAst: "7", lastPlus: "-4" },
+            { rank: 13, id: "3155942", name: "Domantas Sabonis", team: "SAC", pos: "Center", ppg: "19.4", rpg: "13.7", apg: "8.2", fg: "60.1%", lastMatch: "@ Warriors", lastScore: "119 - 115", lastPts: "18", lastReb: "15", lastAst: "7", lastPlus: "+7" },
+            { rank: 14, id: "4277905", name: "Trae Young", team: "ATL", pos: "Guard", ppg: "25.7", rpg: "2.8", apg: "10.8", fg: "43.0%", lastMatch: "vs. Hornets", lastScore: "130 - 124", lastPts: "28", lastReb: "3", lastAst: "12", lastPlus: "+4" },
+            { rank: 15, id: "4684740", name: "Amen Thompson", team: "HOU", pos: "Forward", ppg: "9.5", rpg: "6.6", apg: "2.6", fg: "53.6%", lastMatch: "@ Spurs", lastScore: "108 - 102", lastPts: "12", lastReb: "7", lastAst: "3", lastPlus: "+6" },
+            { rank: 16, id: "4065733", name: "Ty Jerome", team: "MEM", pos: "Guard", ppg: "12.4", rpg: "2.5", apg: "4.1", fg: "51.2%", lastMatch: "vs. Timberwolves", lastScore: "111 - 105", lastPts: "15", lastReb: "3", lastAst: "5", lastPlus: "+4" },
+            { rank: 17, id: "4396993", name: "Tyrese Haliburton", team: "IND", pos: "Guard", ppg: "20.1", rpg: "3.9", apg: "10.9", fg: "47.7%", lastMatch: "vs. Celtics", lastScore: "124 - 129", lastPts: "22", lastReb: "4", lastAst: "11", lastPlus: "-5" },
+            { rank: 18, id: "4871144", name: "Alperen Sengun", team: "HOU", pos: "Center", ppg: "21.1", rpg: "10.3", apg: "4.9", fg: "53.7%", lastMatch: "vs. Nuggets", lastScore: "110 - 115", lastPts: "20", lastReb: "11", lastAst: "5", lastPlus: "-2" },
+            { rank: 19, id: "3136195", name: "Karl-Anthony Towns", team: "NY", pos: "Center", ppg: "21.8", rpg: "11.5", apg: "3.0", fg: "50.4%", lastMatch: "vs. Hawks", lastScore: "116 - 110", lastPts: "25", lastReb: "12", lastAst: "3", lastPlus: "+6" },
+            { rank: 20, id: "4432816", name: "LaMelo Ball", team: "MIN", pos: "Guard", ppg: "23.9", rpg: "5.1", apg: "8.0", fg: "43.3%", lastMatch: "@ Grizzlies", lastScore: "105 - 111", lastPts: "24", lastReb: "5", lastAst: "7", lastPlus: "-3" },
+            { rank: 21, id: "3202", name: "Kevin Durant", team: "HOU", pos: "Forward", ppg: "27.1", rpg: "6.6", apg: "5.0", fg: "52.3%", lastMatch: "vs. Suns", lastScore: "118 - 112", lastPts: "29", lastReb: "7", lastAst: "4", lastPlus: "+7" },
+            { rank: 22, id: "3992", name: "James Harden", team: "CLE", pos: "Guard", ppg: "16.6", rpg: "5.1", apg: "8.5", fg: "41.0%", lastMatch: "@ Heat", lastScore: "112 - 108", lastPts: "18", lastReb: "6", lastAst: "9", lastPlus: "+5" },
+            { rank: 23, id: "3975", name: "Stephen Curry", team: "GSW", pos: "Guard", ppg: "29.2", rpg: "3.8", apg: "4.0", fg: "47.7%", lastMatch: "vs. Kings", lastScore: "115 - 119", lastPts: "32", lastReb: "4", lastAst: "5", lastPlus: "-2" },
+            { rank: 24, id: "1966", name: "LeBron James", team: "LAL", pos: "Forward", ppg: "25.4", rpg: "7.3", apg: "8.3", fg: "54.0%", lastMatch: "@ Suns", lastScore: "128 - 122", lastPts: "27", lastReb: "8", lastAst: "9", lastPlus: "+10" },
+            { rank: 25, id: "4566434", name: "Franz Wagner", team: "ORL", pos: "Forward", ppg: "19.7", rpg: "5.3", apg: "3.7", fg: "48.2%", lastMatch: "@ Cavaliers", lastScore: "110 - 120", lastPts: "21", lastReb: "5", lastAst: "4", lastPlus: "-4" }
         ];
 
         function getTeamLogoUrl(teamName) {
@@ -548,9 +584,8 @@
         }
 
         function openPlayerModal(player) {
-            document.getElementById("modal-player-rank").innerText = `#${player.rank}`;
             document.getElementById("modal-player-name").innerText = player.name;
-            document.getElementById("modal-player-team-pos").innerText = `${player.team} • Position: ${player.pos}`;
+            document.getElementById("modal-player-team").innerText = `${player.team} • ${player.pos}`;
             
             const imgElement = document.getElementById("modal-player-img");
             const primaryImg = `https://a.espncdn.com/i/headshots/nba/players/full/${player.id}.png`;
@@ -561,13 +596,20 @@
                 this.src = fallbackLogo;
             };
 
-            document.getElementById("modal-stat-ppg").innerText = player.ppg;
-            document.getElementById("modal-stat-rpg").innerText = player.rpg;
-            document.getElementById("modal-stat-apg").innerText = player.apg;
+            // Saison-Stats füllen
+            document.getElementById("modal-stat-pts").innerText = player.ppg;
+            document.getElementById("modal-stat-reb").innerText = player.rpg;
+            document.getElementById("modal-stat-ast").innerText = player.apg;
             document.getElementById("modal-stat-fg").innerText = player.fg;
-            document.getElementById("modal-stat-spg").innerText = player.spg;
-            document.getElementById("modal-stat-bpg").innerText = player.bpg;
-            document.getElementById("modal-stat-eff").innerText = player.eff;
+
+            // Letztes Spiel füllen
+            document.getElementById("modal-last-pts").innerText = player.lastPts || "20";
+            document.getElementById("modal-last-reb").innerText = player.lastReb || "6";
+            document.getElementById("modal-last-ast").innerText = player.lastAst || "5";
+            document.getElementById("modal-last-plus").innerText = player.lastPlus || "+5";
+            document.getElementById("modal-last-matchup").innerText = player.lastMatch || (player.team + " Game");
+            document.getElementById("modal-last-score").innerText = player.lastScore || "115 - 110";
+            document.getElementById("modal-last-opp-logo").src = fallbackLogo;
 
             document.getElementById("player-modal").classList.remove("hidden");
         }
