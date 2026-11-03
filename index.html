@@ -312,6 +312,45 @@
         </div>
     </div>
 
+    <!-- POP-UP MODAL FÜR TEAM-KADER -->
+    <div id="roster-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-[#007A33] rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative space-y-4 celtics-glow flex flex-col max-h-[90vh]">
+            <button onclick="closeRosterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+            
+            <!-- Modal Header -->
+            <div class="flex items-center gap-4 border-b border-emerald-950 pb-4 shrink-0">
+                <img id="modal-team-logo" src="" class="w-14 h-14 object-contain bg-emerald-950 p-1.5 rounded-xl border border-[#BA9653]" alt="Logo">
+                <div>
+                    <h3 class="text-2xl font-black text-white" id="modal-team-name">Team Roster</h3>
+                    <p class="text-xs text-[#BA9653] mt-0.5">Offizieller Spieler-Kader</p>
+                </div>
+            </div>
+
+            <!-- Roster Tabelle (Scrollbar) -->
+            <div class="overflow-y-auto custom-scroll flex-grow pr-2">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-950 text-[#BA9653] uppercase text-xs sticky top-0">
+                        <tr>
+                            <th class="px-3 py-2.5">Name</th>
+                            <th class="px-3 py-2.5 text-center">Pos</th>
+                            <th class="px-3 py-2.5 text-center">Alter</th>
+                            <th class="px-3 py-2.5 text-center">Größe</th>
+                            <th class="px-3 py-2.5 text-center">Gewicht</th>
+                            <th class="px-3 py-2.5">College</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roster-table-body" class="divide-y divide-emerald-950/40">
+                        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Lade Kader...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button onclick="closeRosterModal()" class="w-full bg-[#007A33] hover:bg-[#006228] text-white font-bold py-2.5 rounded-xl transition shadow shrink-0">
+                Schließen
+            </button>
+        </div>
+    </div>
+
     <!-- JAVASCRIPT LOGIK -->
     <script>
         let nbaEvents = [];
@@ -617,6 +656,81 @@
         function closePlayerModal() {
             document.getElementById("player-modal").classList.add("hidden");
         }
+
+        // --- NEU: FUNKTIONEN FÜR DAS TEAM-KADER POP-UP BEI NAMENS-KLICK ---
+        async function openTeamRosterModal(teamId, teamName, teamLogo) {
+            // Falls Team-ID nicht direkt in der Tabellen-Antwort vorliegt, mappen wir sie über den Namen
+            let resolvedId = teamId;
+            if (!resolvedId) {
+                // Fallback Mapping für Team-Namen zu ESPN IDs
+                const nameToId = {
+                    "Denver Nuggets": "7", "Oklahoma City Thunder": "25", "Los Angeles Lakers": "13", "San Antonio Spurs": "24",
+                    "Atlanta Hawks": "1", "Miami Heat": "14", "Detroit Pistons": "8", "Boston Celtics": "2", "Dallas Mavericks": "6",
+                    "Philadelphia 76ers": "20", "Cleveland Cavaliers": "5", "Phoenix Suns": "21", "Sacramento Kings": "23",
+                    "Houston Rockets": "10", "Memphis Grizzlies": "29", "Indiana Pacers": "11", "New York Knicks": "18",
+                    "Minnesota Timberwolves": "16", "Golden State Warriors": "9", "Orlando Magic": "19", "Toronto Raptors": "28",
+                    "Milwaukee Bucks": "15", "New Orleans Pelicans": "3", "Chicago Bulls": "4", "Brooklyn Nets": "17",
+                    "Utah Jazz": "26", "Portland Trail Blazers": "22", "LA Clippers": "12", "Washington Wizards": "27", "Charlotte Hornets": "30"
+                };
+                resolvedId = nameToId[teamName] || "2";
+            }
+
+            document.getElementById("modal-team-name").innerText = `${teamName} Roster`;
+            document.getElementById("modal-team-logo").src = teamLogo;
+            
+            const tbody = document.getElementById("roster-table-body");
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400 animate-pulse">Lade Spieler-Kader von ESPN...</td></tr>';
+            
+            document.getElementById("roster-modal").classList.remove("hidden");
+
+            try {
+                const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${resolvedId}/roster`);
+                const data = await res.json();
+                
+                const athletes = data.athletes || [];
+                tbody.innerHTML = "";
+
+                if (athletes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Keine Spieler gefunden.</td></tr>';
+                    return;
+                }
+
+                athletes.forEach((player, idx) => {
+                    const row = document.createElement("tr");
+                    row.className = idx % 2 === 0 ? "bg-slate-900/40 hover:bg-slate-800/80 transition" : "bg-slate-900/20 hover:bg-slate-800/80 transition";
+                    
+                    const headshot = player.headshot?.href || teamLogo;
+                    const name = player.fullName || player.displayName || "Unbekannt";
+                    const pos = player.position?.abbreviation || "-";
+                    const age = player.age || "-";
+                    const height = player.displayHeight || "-";
+                    const weight = player.displayWeight ? `${player.displayWeight} lbs` : "-";
+                    const college = player.college?.name || "-";
+
+                    row.innerHTML = `
+                        <td class="px-3 py-2.5 font-bold text-white flex items-center gap-3">
+                            <img src="${headshot}" class="w-8 h-8 rounded-full object-cover bg-emerald-950 border border-emerald-800 shrink-0" onerror="this.src='${teamLogo}'" alt="">
+                            <span>${name}</span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center text-emerald-400 font-bold">${pos}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-300">${age}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-300">${height}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-300">${weight}</td>
+                        <td class="px-3 py-2.5 text-slate-400 text-xs">${college}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+            } catch (e) {
+                console.error("Fehler beim Laden des Rosters:", e);
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-red-400">Fehler beim Laden des Kaders.</td></tr>';
+            }
+        }
+
+        function closeRosterModal() {
+            document.getElementById("roster-modal").classList.add("hidden");
+        }
+        // -------------------------------------------------------------
 
         function renderStaticCelticsSchedule() {
             const container = document.getElementById("celtics-static-container");
@@ -969,6 +1083,10 @@
                     }
                 }
 
+                const teamId = team?.id;
+                const teamName = team?.displayName || 'Unbekannt';
+                const teamLogo = team?.logos?.[0]?.href || '';
+
                 const row = document.createElement("tr");
                 row.className = isCeltics 
                     ? "bg-[#007A33]/40 border-l-4 border-[#BA9653] font-bold" 
@@ -977,8 +1095,9 @@
                 row.innerHTML = `
                     <td class="px-3 py-3 font-semibold text-white flex items-center gap-2.5">
                         <span class="w-5 font-bold ${idx < 6 ? 'text-[#BA9653]' : 'text-slate-400'}">${idx + 1}</span>
-                        <img src="${team?.logos?.[0]?.href || ''}" class="w-6 h-6 object-contain" alt="">
-                        <span class="truncate max-w-[140px] ${isCeltics ? 'text-[#BA9653] font-bold' : ''}">${team?.displayName || 'Unbekannt'} ${isCeltics ? '🍀' : ''}</span>
+                        <img src="${teamLogo}" class="w-6 h-6 object-contain" alt="">
+                        <!-- Klick auf den Teamnamen öffnet den Kader -->
+                        <span onclick="openTeamRosterModal('${teamId}', '${teamName}', '${teamLogo}')" class="truncate max-w-[140px] cursor-pointer hover:text-[#BA9653] underline decoration-emerald-700/50 ${isCeltics ? 'text-[#BA9653] font-bold' : ''}">${teamName} 🔍</span>
                     </td>
                     <td class="px-2 py-3 text-center font-bold text-emerald-400">${wins || '-'}</td>
                     <td class="px-2 py-3 text-center font-bold text-red-400">${losses || '-'}</td>
