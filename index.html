@@ -6,6 +6,8 @@
     <title>🏀 NBA Live Dashboard & Boston Celtics Hub</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS v2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #0b110f; color: #f8fafc; }
         .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
@@ -51,9 +53,14 @@
                     <input type="date" id="date-picker" onchange="loadNbaGamesForCustomDate()" class="hidden bg-slate-900 border border-emerald-900/80 text-[#BA9653] font-semibold px-3 py-1.5 rounded-lg text-sm focus:outline-none focus:border-[#BA9653]">
                 </div>
 
-                <!-- PUSH TOGGLE BUTTON -->
-                <button onclick="toggleCelticsPush()" id="push-btn" class="bg-emerald-950 hover:bg-emerald-900 border border-[#BA9653]/50 text-[#BA9653] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2">
-                    🔔 Celtics Push: <span id="push-status-text" class="text-slate-400">Aus</span>
+                <!-- PUSH TOGGLE BUTTON (Nur NBA Endergebnisse) -->
+                <button onclick="toggleNbaFinalsPush()" id="push-btn" class="bg-emerald-950 hover:bg-emerald-900 border border-[#BA9653]/50 text-[#BA9653] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2">
+                    🔔 NBA Endergebnisse Push: <span id="push-status-text" class="text-slate-400">Aus</span>
+                </button>
+
+                <!-- ADMIN MODAL BUTTON -->
+                <button onclick="openAdminModal()" class="bg-slate-900 hover:bg-slate-800 border border-amber-500/50 text-amber-400 font-semibold px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2">
+                    🔐 Admin
                 </button>
 
                 <button onclick="refreshAllData()" class="bg-[#007A33] hover:bg-[#006228] text-white border border-[#BA9653]/30 font-semibold px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
@@ -228,6 +235,45 @@
 
     </div>
 
+    <!-- ADMIN-BEREICH MODAL (PASSWORT: 1919) -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-[#BA9653] rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-5">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+
+            <div class="border-b border-emerald-900/60 pb-3">
+                <h3 class="text-xl font-black text-[#BA9653] flex items-center gap-2">🔐 NBA Push Admin-Bereich</h3>
+                <p class="text-xs text-slate-400 mt-1">Test-Push an <code class="text-emerald-400">push_subscriptions_celtics</code> auslösen</p>
+            </div>
+
+            <!-- Login -->
+            <div id="admin-login-box" class="space-y-3">
+                <label for="admin-pin-input" class="block text-xs font-bold uppercase text-slate-300">Passwort</label>
+                <input type="password" id="admin-pin-input" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter') unlockAdminArea()" class="w-full bg-slate-950 border border-emerald-800 focus:border-[#BA9653] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none">
+                <p id="admin-error-msg" class="text-xs text-rose-400 hidden">Falsches Passwort.</p>
+                <button onclick="unlockAdminArea()" class="w-full bg-[#007A33] hover:bg-[#006228] text-white font-bold py-2.5 rounded-xl transition">
+                    Entsperren
+                </button>
+            </div>
+
+            <!-- Freigeschalteter Admin-Bereich -->
+            <div id="admin-controls-box" class="hidden space-y-4">
+                <div class="bg-slate-950 p-3.5 rounded-xl border border-emerald-900/60 space-y-2">
+                    <label for="admin-test-title" class="block text-[11px] font-bold uppercase text-slate-400">Titel</label>
+                    <input type="text" id="admin-test-title" value="🏀 NBA Endergebnis Test" class="w-full bg-slate-900 border border-emerald-900 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#BA9653]">
+
+                    <label for="admin-test-body" class="block text-[11px] font-bold uppercase text-slate-400 pt-1">Nachricht</label>
+                    <input type="text" id="admin-test-body" value="BOS 121 : 114 LAL (Final)" class="w-full bg-slate-900 border border-emerald-900 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#BA9653]">
+                </div>
+
+                <button onclick="sendAdminTestPush()" id="admin-send-btn" class="w-full bg-[#BA9653] hover:bg-[#a68443] text-slate-950 font-black py-2.5 rounded-xl transition shadow">
+                    🚀 Test-Push jetzt senden
+                </button>
+
+                <p id="admin-status-msg" class="text-xs text-emerald-400 min-h-[1rem]"></p>
+            </div>
+        </div>
+    </div>
+
     <!-- POP-UP MODAL FÜR SPIELERDETAILS (Saison-Stats + Letztes Spiel) -->
     <div id="player-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border-2 border-[#007A33] rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-5 celtics-glow">
@@ -353,12 +399,28 @@
 
     <!-- JAVASCRIPT LOGIK -->
     <script>
+        // --- SUPABASE & WEB PUSH KONFIGURATION ---
+        const SUPABASE_URL = 'https://lhusylpjnujlqomougmg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_yXEueWILvAq-Vm2VfTuYyg_BIQeE1KK';
+        const VAPID_PUBLIC_KEY = 'BAsnfWgySLti5LzulXfN-xI-x7UDV32LO98YXgg1qdoRY1E1Tl05QPgCvOMgfwe80cSv_K7336-dhJTgBkHUI70';
+        const PUSH_TABLE = 'push_subscriptions_celtics';
+        const SENT_EVENTS_TABLE = 'push_sent_events_nba';
+        const EDGE_FUNCTION_NAME = 'send-push';
+        const ADMIN_PASSWORD = '1919';
+
+        const supabaseClient = (typeof supabase !== "undefined" && SUPABASE_URL.startsWith("https://"))
+            ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : null;
+
         let nbaEvents = [];
         let autoRefreshTimer = null;
         let pushActive = false;
         let activeTab = 'games';
+        let swRegistration = null;
+        const notifiedFinalKeys = new Set();
 
         const celticsLogo = "https://a.espncdn.com/i/teamlogos/nba/500/bos.png";
+        const nbaLogo = "https://a.espncdn.com/i/teamlogos/nba/500/nba.png";
 
         const teamCodeMap = {
             "DEN": "den", "SA": "sas", "OKC": "okc", "LAL": "lal", "PHI": "phi",
@@ -369,7 +431,6 @@
             "BKN": "bkn", "UTA": "uta", "POR": "por", "LAC": "lac", "GSW": "gsw"
         };
 
-        // Die 25 Spieler mit Saisonwerten und Beispieldaten für das letzte Spiel (als stabiler Fallback)
         const top30Players = [
             { rank: 1, id: "3112335", name: "Nikola Jokic", team: "DEN", pos: "Center", ppg: "29.7", rpg: "13.7", apg: "11.7", fg: "58.3%", lastMatch: "vs. Trail Blazers", lastScore: "118 - 110", lastPts: "26", lastReb: "9", lastAst: "8", lastPlus: "-3" },
             { rank: 2, id: "4278073", name: "Shai Gilgeous-Alexander", team: "OKC", pos: "Guard", ppg: "31.2", rpg: "5.5", apg: "6.2", fg: "53.5%", lastMatch: "vs. Pelicans", lastScore: "120 - 112", lastPts: "35", lastReb: "6", lastAst: "7", lastPlus: "+14" },
@@ -428,7 +489,7 @@
                 "Philadelphia 76ers": "https://a.espncdn.com/i/teamlogos/nba/500/phi.png",
                 "Washington Wizards": "https://a.espncdn.com/i/teamlogos/nba/500/was.png"
             };
-            return map[teamName] || "https://a.espncdn.com/i/teamlogos/nba/500/nba.png";
+            return map[teamName] || nbaLogo;
         }
 
         const celticsScheduleData = [
@@ -461,6 +522,260 @@
             { date: "29. Dez", time: "01:00 Uhr", opponent: "Indiana Pacers", isHome: false, result: null, score: null, record: "-", topScorer: null },
             { date: "31. Dez", time: "21:00 Uhr", opponent: "Toronto Raptors", isHome: true, result: null, score: null, record: "-", topScorer: null }
         ];
+
+        // --- ADMIN MODAL LOGIK (PASSWORT: 1919) ---
+        function openAdminModal() {
+            document.getElementById("admin-pin-input").value = "";
+            document.getElementById("admin-error-msg").classList.add("hidden");
+            document.getElementById("admin-status-msg").innerText = "";
+            document.getElementById("admin-login-box").classList.remove("hidden");
+            document.getElementById("admin-controls-box").classList.add("hidden");
+            document.getElementById("admin-modal").classList.remove("hidden");
+        }
+
+        function closeAdminModal() {
+            document.getElementById("admin-modal").classList.add("hidden");
+        }
+
+        function unlockAdminArea() {
+            const pin = document.getElementById("admin-pin-input").value.trim();
+            if (pin === ADMIN_PASSWORD) {
+                document.getElementById("admin-error-msg").classList.add("hidden");
+                document.getElementById("admin-login-box").classList.add("hidden");
+                document.getElementById("admin-controls-box").classList.remove("hidden");
+            } else {
+                document.getElementById("admin-error-msg").classList.remove("hidden");
+            }
+        }
+
+        async function sendAdminTestPush() {
+            const statusEl = document.getElementById("admin-status-msg");
+            const btn = document.getElementById("admin-send-btn");
+            const title = document.getElementById("admin-test-title").value.trim() || "🏀 NBA Endergebnis Test";
+            const body = document.getElementById("admin-test-body").value.trim() || "Test-Benachrichtigung";
+
+            if (!supabaseClient) {
+                statusEl.className = "text-xs text-rose-400";
+                statusEl.innerText = "Supabase Client nicht verfügbar.";
+                return;
+            }
+
+            btn.disabled = true;
+            statusEl.className = "text-xs text-slate-300";
+            statusEl.innerText = "Sende Test-Push...";
+
+            try {
+                const { error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                    body: {
+                        table: PUSH_TABLE,
+                        eventKey: `admin_test_${Date.now()}`,
+                        title,
+                        body,
+                        icon: nbaLogo,
+                        url: window.location.href
+                    }
+                });
+
+                if (error) {
+                    statusEl.className = "text-xs text-rose-400";
+                    statusEl.innerText = `Fehler: ${error.message}`;
+                } else {
+                    statusEl.className = "text-xs text-emerald-400 font-semibold";
+                    statusEl.innerText = "Test-Push an send-push übergeben.";
+                }
+            } catch (err) {
+                statusEl.className = "text-xs text-rose-400";
+                statusEl.innerText = `Fehler: ${err.message || err}`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- SERVICE WORKER & SUPABASE PUSH HELFER (NUR NBA ENDERGEBNISSE) ---
+        function urlBase64ToUint8Array(base64String) {
+            const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+            const rawData = window.atob(base64);
+            return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+        }
+
+        async function registerPushServiceWorker() {
+            if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+                return null;
+            }
+            try {
+                swRegistration = await navigator.serviceWorker.register("./sw.js");
+                const existingSub = await swRegistration.pushManager.getSubscription();
+                if (existingSub) {
+                    updatePushUi(true);
+                }
+                return swRegistration;
+            } catch (err) {
+                console.error("Service Worker Registrierung fehlgeschlagen:", err);
+                return null;
+            }
+        }
+
+        function updatePushUi(active) {
+            pushActive = active;
+            const statusText = document.getElementById("push-status-text");
+            const btn = document.getElementById("push-btn");
+            if (active) {
+                statusText.innerText = "Aktiv (Endergebnisse)";
+                statusText.className = "text-[#BA9653] font-bold";
+                btn.className = "bg-emerald-900 border border-[#BA9653] text-[#BA9653] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2";
+            } else {
+                statusText.innerText = "Aus";
+                statusText.className = "text-slate-400";
+                btn.className = "bg-emerald-950 hover:bg-emerald-900 border border-[#BA9653]/50 text-[#BA9653] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2";
+            }
+        }
+
+        async function saveSubscriptionToSupabase(subscription) {
+            if (!supabaseClient) return;
+            const subJson = subscription.toJSON();
+            const payload = {
+                endpoint: subJson.endpoint,
+                p256dh: subJson.keys?.p256dh || null,
+                auth: subJson.keys?.auth || null,
+                subscription: subJson,
+                team: "NBA_ALL_FINALS",
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient
+                .from(PUSH_TABLE)
+                .upsert(payload, { onConflict: "endpoint" });
+
+            if (error) {
+                console.error(`Fehler beim Speichern in ${PUSH_TABLE}:`, error);
+            }
+        }
+
+        async function removeSubscriptionFromSupabase(endpoint) {
+            if (!supabaseClient || !endpoint) return;
+            const { error } = await supabaseClient
+                .from(PUSH_TABLE)
+                .delete()
+                .eq("endpoint", endpoint);
+
+            if (error) {
+                console.error(`Fehler beim Löschen aus ${PUSH_TABLE}:`, error);
+            }
+        }
+
+        async function toggleNbaFinalsPush() {
+            if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+                alert("Dein Browser unterstützt keine Web-Push-Benachrichtigungen.");
+                return;
+            }
+
+            const reg = swRegistration || await registerPushServiceWorker();
+            if (!reg) {
+                alert("Service Worker (./sw.js) konnte nicht registriert werden.");
+                return;
+            }
+
+            if (!pushActive) {
+                const permission = await Notification.requestPermission();
+                if (permission !== "granted") {
+                    alert("Benachrichtigungen wurden im Browser nicht erlaubt.");
+                    return;
+                }
+
+                try {
+                    const subscription = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                    await saveSubscriptionToSupabase(subscription);
+                    updatePushUi(true);
+                    evaluateAllNbaFinalPushes(nbaEvents);
+                } catch (err) {
+                    console.error("Push-Abo fehlgeschlagen:", err);
+                    alert("Push-Abo konnte nicht erstellt werden.");
+                }
+            } else {
+                try {
+                    const currentSub = await reg.pushManager.getSubscription();
+                    if (currentSub) {
+                        await removeSubscriptionFromSupabase(currentSub.endpoint);
+                        await currentSub.unsubscribe();
+                    }
+                    updatePushUi(false);
+                } catch (err) {
+                    console.error("Fehler beim Deaktivieren des Push-Abos:", err);
+                }
+            }
+        }
+
+        async function claimFinalEventOnce(eventKey) {
+            if (notifiedFinalKeys.has(eventKey)) return false;
+            notifiedFinalKeys.add(eventKey);
+
+            if (!supabaseClient) return true;
+
+            const { error } = await supabaseClient
+                .from(SENT_EVENTS_TABLE)
+                .insert({ event_key: eventKey });
+
+            if (error) {
+                // Postgres unique_violation (23505) bedeutet: bereits gesendet
+                if (error.code === "23505") {
+                    return false;
+                }
+                console.warn("Hinweis beim Prüfen von push_sent_events_nba:", error.message);
+            }
+            return true;
+        }
+
+        async function evaluateAllNbaFinalPushes(events) {
+            if (!pushActive || !supabaseClient || !Array.isArray(events)) return;
+
+            for (const event of events) {
+                const isFinal = Boolean(event.status?.type?.completed) || event.status?.type?.state === "post";
+                if (!isFinal) continue;
+
+                const competition = event.competitions?.[0];
+                const home = competition?.competitors?.find(c => c.homeAway === "home");
+                const away = competition?.competitors?.find(c => c.homeAway === "away");
+                if (!home || !away) continue;
+
+                const awayAbbr = away.team?.abbreviation || "AWAY";
+                const homeAbbr = home.team?.abbreviation || "HOME";
+                const awayScore = away.score ?? "0";
+                const homeScore = home.score ?? "0";
+                const detail = event.status?.type?.shortDetail || "Final";
+                const isCelticsGame = awayAbbr === "BOS" || homeAbbr === "BOS";
+
+                const eventKey = `nba_final_${event.id}_${awayScore}-${homeScore}`;
+                const shouldSend = await claimFinalEventOnce(eventKey);
+                if (!shouldSend) continue;
+
+                const title = isCelticsGame
+                    ? "🍀 Celtics Endergebnis"
+                    : "🏀 NBA Endergebnis";
+                const body = `${awayAbbr} ${awayScore} : ${homeScore} ${homeAbbr} (${detail})`;
+
+                try {
+                    const { error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                        body: {
+                            table: PUSH_TABLE,
+                            eventKey,
+                            title,
+                            body,
+                            icon: isCelticsGame ? celticsLogo : (home.team?.logo || nbaLogo),
+                            url: window.location.href
+                        }
+                    });
+                    if (error) {
+                        console.error("Fehler beim Aufruf von send-push:", error);
+                    }
+                } catch (err) {
+                    console.error("Edge Function Invoke fehlgeschlagen:", err);
+                }
+            }
+        }
 
         function formatDateForEspn(dateObj) {
             const y = dateObj.getFullYear();
@@ -571,6 +886,7 @@
                 nbaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
 
                 checkLiveState();
+                await evaluateAllNbaFinalPushes(nbaEvents);
                 renderGamesToContainer(nbaEvents, container, true);
             } catch (error) {
                 console.error("Fehler beim Abrufen der Wochen-Spiele:", error);
@@ -588,6 +904,7 @@
                 nbaEvents = data.events || [];
 
                 checkLiveState();
+                await evaluateAllNbaFinalPushes(nbaEvents);
                 renderGamesToContainer(nbaEvents, container, true);
             } catch (error) {
                 console.error("Fehler:", error);
@@ -635,13 +952,11 @@
                 this.src = fallbackLogo;
             };
 
-            // Saison-Stats füllen
             document.getElementById("modal-stat-pts").innerText = player.ppg;
             document.getElementById("modal-stat-reb").innerText = player.rpg;
             document.getElementById("modal-stat-ast").innerText = player.apg;
             document.getElementById("modal-stat-fg").innerText = player.fg;
 
-            // Letztes Spiel füllen
             document.getElementById("modal-last-pts").innerText = player.lastPts || "20";
             document.getElementById("modal-last-reb").innerText = player.lastReb || "6";
             document.getElementById("modal-last-ast").innerText = player.lastAst || "5";
@@ -657,12 +972,9 @@
             document.getElementById("player-modal").classList.add("hidden");
         }
 
-        // --- NEU: FUNKTIONEN FÜR DAS TEAM-KADER POP-UP BEI NAMENS-KLICK ---
         async function openTeamRosterModal(teamId, teamName, teamLogo) {
-            // Falls Team-ID nicht direkt in der Tabellen-Antwort vorliegt, mappen wir sie über den Namen
             let resolvedId = teamId;
             if (!resolvedId) {
-                // Fallback Mapping für Team-Namen zu ESPN IDs
                 const nameToId = {
                     "Denver Nuggets": "7", "Oklahoma City Thunder": "25", "Los Angeles Lakers": "13", "San Antonio Spurs": "24",
                     "Atlanta Hawks": "1", "Miami Heat": "14", "Detroit Pistons": "8", "Boston Celtics": "2", "Dallas Mavericks": "6",
@@ -730,7 +1042,6 @@
         function closeRosterModal() {
             document.getElementById("roster-modal").classList.add("hidden");
         }
-        // -------------------------------------------------------------
 
         function renderStaticCelticsSchedule() {
             const container = document.getElementById("celtics-static-container");
@@ -797,7 +1108,6 @@
                     </div>
 
                     <div class="space-y-2.5 pt-1">
-                        <!-- TOP TEAM -->
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3">
                                 <img src="${topTeamLogo}" class="w-8 h-8 object-contain bg-emerald-950 rounded-full p-0.5 border border-emerald-900" alt="Logo">
@@ -811,7 +1121,6 @@
                             </span>
                         </div>
 
-                        <!-- BOTTOM TEAM -->
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3">
                                 <img src="${bottomTeamLogo}" class="w-8 h-8 object-contain bg-emerald-950 rounded-full p-0.5 border border-emerald-900" alt="Logo">
@@ -848,22 +1157,6 @@
                     clearInterval(autoRefreshTimer);
                     autoRefreshTimer = null;
                 }
-            }
-        }
-
-        function toggleCelticsPush() {
-            pushActive = !pushActive;
-            const statusText = document.getElementById("push-status-text");
-            const btn = document.getElementById("push-btn");
-            if (pushActive) {
-                statusText.innerText = "Aktiv (Celtics)";
-                statusText.className = "text-[#BA9653] font-bold";
-                btn.className = "bg-emerald-900 border border-[#BA9653] text-[#BA9653] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2";
-                alert("Celtics Push-Benachrichtigungen wurden erfolgreich aktiviert!");
-            } else {
-                statusText.innerText = "Aus";
-                statusText.className = "text-slate-400";
-                btn.className = "bg-emerald-950 hover:bg-emerald-900 border border-[#BA9653]/50 text-[#BA9653] font-medium px-3.5 py-1.5 rounded-lg shadow text-sm transition flex items-center gap-2";
             }
         }
 
@@ -950,7 +1243,6 @@
                 </div>
 
                 <div class="space-y-2.5">
-                    <!-- AWAY TEAM -->
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <img src="${away?.team?.logo || ''}" class="w-8 h-8 object-contain" alt="Logo">
@@ -964,7 +1256,6 @@
                         </span>
                     </div>
 
-                    <!-- HOME TEAM -->
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
                             <img src="${home?.team?.logo || ''}" class="w-8 h-8 object-contain" alt="Logo">
@@ -1096,7 +1387,6 @@
                     <td class="px-3 py-3 font-semibold text-white flex items-center gap-2.5">
                         <span class="w-5 font-bold ${idx < 6 ? 'text-[#BA9653]' : 'text-slate-400'}">${idx + 1}</span>
                         <img src="${teamLogo}" class="w-6 h-6 object-contain" alt="">
-                        <!-- Klick auf den Teamnamen öffnet den Kader -->
                         <span onclick="openTeamRosterModal('${teamId}', '${teamName}', '${teamLogo}')" class="truncate max-w-[140px] cursor-pointer hover:text-[#BA9653] underline decoration-emerald-700/50 ${isCeltics ? 'text-[#BA9653] font-bold' : ''}">${teamName} 🔍</span>
                     </td>
                     <td class="px-2 py-3 text-center font-bold text-emerald-400">${wins || '-'}</td>
@@ -1118,6 +1408,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            registerPushServiceWorker();
             handleRangeChange();
             loadNbaStandings();
         });
