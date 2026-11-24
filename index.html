@@ -487,7 +487,8 @@
                 "Chicago Bulls": "https://a.espncdn.com/i/teamlogos/nba/500/chi.png",
                 "Detroit Pistons": "https://a.espncdn.com/i/teamlogos/nba/500/det.png",
                 "Philadelphia 76ers": "https://a.espncdn.com/i/teamlogos/nba/500/phi.png",
-                "Washington Wizards": "https://a.espncdn.com/i/teamlogos/nba/500/was.png"
+                "Washington Wizards": "https://a.espncdn.com/i/teamlogos/nba/500/was.png",
+                "Brooklyn Nets": "https://a.espncdn.com/i/teamlogos/nba/500/bkn.png"
             };
             return map[teamName] || nbaLogo;
         }
@@ -720,7 +721,6 @@
                 .insert({ event_key: eventKey });
 
             if (error) {
-                // Postgres unique_violation (23505) bedeutet: bereits gesendet
                 if (error.code === "23505") {
                     return false;
                 }
@@ -807,7 +807,6 @@
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const content = document.getElementById(`tab-content-${t}`);
-                const filterWrapper = document.getElementById("range-filter-wrapper");
 
                 if (t === tabName) {
                     btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-lg bg-[#007A33] text-white border-t-2 border-[#BA9653] transition shadow whitespace-nowrap";
@@ -819,16 +818,16 @@
             });
 
             if (tabName === 'top30') {
-                filterWrapper.classList.add("hidden");
+                document.getElementById("range-filter-wrapper").classList.add("hidden");
                 renderTop30List();
             } else if (tabName === 'celtics') {
-                filterWrapper.classList.add("hidden");
+                document.getElementById("range-filter-wrapper").classList.add("hidden");
                 renderStaticCelticsSchedule();
             } else if (tabName === 'games') {
-                filterWrapper.classList.remove("hidden");
+                document.getElementById("range-filter-wrapper").classList.remove("hidden");
                 handleRangeChange();
             } else {
-                filterWrapper.classList.add("hidden");
+                document.getElementById("range-filter-wrapper").classList.add("hidden");
             }
         }
 
@@ -838,6 +837,8 @@
             } else if (activeTab === 'top30') {
                 renderTop30List();
             } else if (activeTab === 'celtics') {
+                renderStaticCelticsSchedule();
+            } else {
                 renderStaticCelticsSchedule();
             }
             await loadNbaStandings();
@@ -1043,11 +1044,175 @@
             document.getElementById("roster-modal").classList.add("hidden");
         }
 
-        function renderStaticCelticsSchedule() {
+        function parseEspnCelticsSchedule(events) {
+            if (!Array.isArray(events) || events.length === 0) return [];
+
+            let wins = 0;
+            let losses = 0;
+
+            return events
+                .slice()
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .map(ev => {
+                    const comp = ev.competitions?.[0];
+                    const competitors = comp?.competitors || [];
+                    const celtics = competitors.find(c =>
+                        String(c.team?.id) === "2" ||
+                        c.team?.abbreviation === "BOS" ||
+                        c.team?.displayName?.toLowerCase().includes("celtics")
+                    );
+                    const opponent = competitors.find(c => c !== celtics);
+
+                    const dt = new Date(ev.date);
+                    const dateLabel = dt.toLocaleDateString("de-DE", { day: "2-digit", month: "short" }).replace(".", "");
+                    const timeLabel = dt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+
+                    const isHome = celtics?.homeAway === "home";
+                    const state = ev.status?.type?.state || comp?.status?.type?.state || "";
+                    const isCompleted = Boolean(ev.status?.type?.completed) || Boolean(comp?.status?.type?.completed) || state === "post";
+
+                    const extractScore = (competitor) => {
+                        if (!competitor) return null;
+                        const raw = competitor.score?.value ?? competitor.score?.displayValue ?? competitor.score;
+                        if (raw === undefined || raw === null || raw === "") return null;
+                        const parsed = parseInt(String(raw), 10);
+                        return isNaN(parsed) ? null : parsed;
+                    };
+
+                    let cScore = extractScore(celtics);
+                    let oScore = extractScore(opponent);
+
+                    if ((cScore === null || oScore === null) && Array.isArray(nbaEvents) && nbaEvents.length > 0) {
+                        const liveMatch = nbaEvents.find(item => String(item.id) === String(ev.id));
+                        if (liveMatch) {
+                            const liveComp = liveMatch.competitions?.[0];
+                            const liveBos = liveComp?.competitors?.find(c => c.team?.abbreviation === "BOS");
+                            const liveOpp = liveComp?.competitors?.find(c => c !== liveBos);
+                            const lC = extractScore(liveBos);
+                            const lO = extractScore(liveOpp);
+                            if (lC !== null && lO !== null) {
+                                cScore = lC;
+                                oScore = lO;
+                            }
+                        }
+                    }
+
+                    let result = null;
+                    let scoreStr = null;
+                    const hasFinishedScore = (isCompleted || state === "post") && cScore !== null && oScore !== null && (cScore > 0 || oScore > 0);
+
+                    if (hasFinishedScore) {
+                        scoreStr = `${cScore}-${oScore}`;
+                        if (cScore > oScore) {
+                            result = "W";
+                            wins++;
+                        } else if (oScore > cScore) {
+                            result = "L";
+                            losses++;
+                        }
+                    }
+
+                    const fallbackMatch = celticsScheduleData.find(item =>
+                        opponent?.team?.displayName &&
+                        item.opponent.toLowerCase() === opponent.team.displayName.toLowerCase() &&
+                        item.date.toLowerCase() === dateLabel.toLowerCase()
+                    );
+
+                    const finalResult = result || (hasFinishedScore ? null : fallbackMatch?.result || null);
+                    const finalScore = scoreStr || (hasFinishedScore ? fallbackMatch?.score || null : null);
+
+                    const recordStr = finalResult
+                        ? `${wins}-${losses}`
+                        : (celtics?.record?.displayValue || fallbackMatch?.record || "-");
+
+                    let topScorer = null;
+                    if (finalResult && celtics?.leaders) {
+                        const ptsLeader = celtics.leaders.find(l => l.name === "points" || l.abbreviation === "PTS")?.leaders?.[0];
+                        if (ptsLeader?.athlete?.shortName && ptsLeader?.displayValue) {
+                            topScorer = `${ptsLeader.athlete.shortName}: ${ptsLeader.displayValue}`;
+                        }
+                    }
+                    if (!topScorer && fallbackMatch?.topScorer) {
+                        topScorer = fallbackMatch.topScorer;
+                    }
+
+                    return {
+                        date: dateLabel,
+                        time: finalResult ? "Final" : timeLabel,
+                        opponent: opponent?.team?.displayName || fallbackMatch?.opponent || "Gegner",
+                        isHome,
+                        result: finalResult,
+                        score: finalScore,
+                        record: recordStr,
+                        topScorer,
+                        rawDate: dt
+                    };
+                });
+        }
+
+        function updateCelticsHeroFromSchedule(scheduleItems) {
+            if (!Array.isArray(scheduleItems) || scheduleItems.length === 0) return;
+
+            const completedGames = scheduleItems.filter(g => g.result === "W" || g.result === "L");
+            const nextGame = scheduleItems.find(g => !g.result);
+
+            const wins = completedGames.filter(g => g.result === "W").length;
+            const losses = completedGames.filter(g => g.result === "L").length;
+
+            const recordEl = document.getElementById("celtics-hero-record");
+            if (recordEl) recordEl.innerText = `${wins} - ${losses}`;
+
+            const lastEl = document.getElementById("celtics-hero-last");
+            if (lastEl && completedGames.length > 0) {
+                const last = completedGames[completedGames.length - 1];
+                const prefix = last.isHome ? "vs." : "@";
+                const oppShort = last.opponent.split(" ").pop();
+                const formattedScore = last.score ? last.score.replace("-", ":") : "";
+                lastEl.innerText = `${prefix} ${oppShort} (${formattedScore})`;
+            }
+
+            const nextEl = document.getElementById("celtics-hero-next");
+            if (nextEl) {
+                if (nextGame) {
+                    const prefix = nextGame.isHome ? "vs." : "@";
+                    const oppShort = nextGame.opponent.split(" ").pop();
+                    nextEl.innerText = `${nextGame.date}. ${prefix} ${oppShort}`;
+                } else {
+                    nextEl.innerText = "Saison beendet";
+                }
+            }
+
+            const formEl = document.getElementById("celtics-hero-form");
+            if (formEl) {
+                const last5 = completedGames.slice(-5);
+                formEl.innerHTML = last5.map(g => {
+                    const isW = g.result === "W";
+                    return `<span class="w-5 h-5 rounded ${isW ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"} text-[10px] font-bold flex items-center justify-center">${isW ? "S" : "N"}</span>`;
+                }).join("");
+            }
+        }
+
+        async function renderStaticCelticsSchedule() {
             const container = document.getElementById("celtics-static-container");
+            container.innerHTML = '<div class="text-center py-8 text-slate-400 animate-pulse col-span-full">⌛ Lade kompletten Celtics-Spielplan & Ergebnisse von ESPN...</div>';
+
+            let gamesToRender = celticsScheduleData;
+
+            try {
+                const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/2/schedule?season=2027");
+                const data = await res.json();
+                const parsed = parseEspnCelticsSchedule(data.events || []);
+                if (parsed.length > 0) {
+                    gamesToRender = parsed;
+                    updateCelticsHeroFromSchedule(parsed);
+                }
+            } catch (err) {
+                console.warn("ESPN Celtics Schedule Fallback auf statische Daten:", err);
+            }
+
             container.innerHTML = "";
 
-            celticsScheduleData.forEach(game => {
+            gamesToRender.forEach(game => {
                 const isWin = game.result === "W";
                 const isLoss = game.result === "L";
                 
@@ -1411,6 +1576,7 @@
             registerPushServiceWorker();
             handleRangeChange();
             loadNbaStandings();
+            renderStaticCelticsSchedule();
         });
     </script>
 </body>
