@@ -262,7 +262,7 @@
                     <input type="text" id="admin-test-title" value="🏀 NBA Endergebnis Test" class="w-full bg-slate-900 border border-emerald-900 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#BA9653]">
 
                     <label for="admin-test-body" class="block text-[11px] font-bold uppercase text-slate-400 pt-1">Nachricht</label>
-                    <input type="text" id="admin-test-body" value="BOS 121 : 114 LAL (Final)" class="w-full bg-slate-900 border border-emerald-900 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#BA9653]">
+                    <input type="text" id="admin-test-body" value="Boston Celtics 121 : 114 Los Angeles Lakers (Final)" class="w-full bg-slate-900 border border-emerald-900 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#BA9653]">
                 </div>
 
                 <button onclick="sendAdminTestPush()" id="admin-send-btn" class="w-full bg-[#BA9653] hover:bg-[#a68443] text-slate-950 font-black py-2.5 rounded-xl transition shadow">
@@ -741,12 +741,16 @@
                 const away = competition?.competitors?.find(c => c.homeAway === "away");
                 if (!home || !away) continue;
 
-                const awayAbbr = away.team?.abbreviation || "AWAY";
-                const homeAbbr = home.team?.abbreviation || "HOME";
+                const awayName = away.team?.displayName || away.team?.shortDisplayName || away.team?.abbreviation || "Away";
+                const homeName = home.team?.displayName || home.team?.shortDisplayName || home.team?.abbreviation || "Home";
                 const awayScore = away.score ?? "0";
                 const homeScore = home.score ?? "0";
                 const detail = event.status?.type?.shortDetail || "Final";
-                const isCelticsGame = awayAbbr === "BOS" || homeAbbr === "BOS";
+                const isCelticsGame =
+                    away.team?.abbreviation === "BOS" ||
+                    home.team?.abbreviation === "BOS" ||
+                    awayName.toLowerCase().includes("celtics") ||
+                    homeName.toLowerCase().includes("celtics");
 
                 const eventKey = `nba_final_${event.id}_${awayScore}-${homeScore}`;
                 const shouldSend = await claimFinalEventOnce(eventKey);
@@ -755,7 +759,7 @@
                 const title = isCelticsGame
                     ? "🍀 Celtics Endergebnis"
                     : "🏀 NBA Endergebnis";
-                const body = `${awayAbbr} ${awayScore} : ${homeScore} ${homeAbbr} (${detail})`;
+                const body = `${awayName} ${awayScore} : ${homeScore} ${homeName} (${detail})`;
 
                 try {
                     const { error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
