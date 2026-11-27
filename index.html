@@ -68,7 +68,7 @@
                 <div class="flex flex-wrap items-center gap-2.5">
                     <div id="live-indicator" class="hidden items-center gap-2 bg-rose-950/80 border border-rose-500/60 text-rose-200 px-3.5 py-2 rounded-xl text-xs font-extrabold shadow-lg shadow-rose-950/40">
                         <span class="w-2.5 h-2.5 rounded-full bg-rose-500 live-dot"></span>
-                        LIVE SPIEL LÄUFT (15s)
+                        LIVE SPIEL LÄUFT (60s)
                     </div>
 
                     <!-- PUSH TOGGLE BUTTON (Nur NBA Endergebnisse) -->
@@ -1030,7 +1030,7 @@
                 liveIndicator.classList.remove("hidden");
                 liveIndicator.classList.add("flex");
                 if (!autoRefreshTimer) {
-                    autoRefreshTimer = setInterval(refreshAllData, 15000);
+                    autoRefreshTimer = setInterval(refreshAllData, 60000);
                 }
             } else {
                 liveIndicator.classList.add("hidden");
