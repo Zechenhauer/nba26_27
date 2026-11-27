@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏀 NBA Live Dashboard</title>
+
+    <!-- App-Icons für Browser & Handy-Homescreen -->
+    <link rel="icon" type="image/png" sizes="512x512" href="logo.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="logo.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NBA Live">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS v2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            background-color: #060913;
+            background-image:
+                radial-gradient(circle at 12% 0%, rgba(29, 66, 138, 0.24), transparent 38%),
+                radial-gradient(circle at 88% 8%, rgba(200, 16, 46, 0.18), transparent 36%),
+                radial-gradient(circle at 50% 100%, rgba(212, 175, 55, 0.08), transparent 45%);
+            color: #f8fafc;
+            font-variant-numeric: tabular-nums;
+        }
+        .custom-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0d1322; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #24324d; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+        @keyframes pulse-live {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.12); }
+        }
+        .gold-glow { box-shadow: 0 0 28px rgba(212, 175, 55, 0.16); border-color: rgba(212, 175, 55, 0.55) !important; }
+        .live-card-glow {
+            box-shadow: 0 10px 30px -5px rgba(200, 16, 46, 0.28), 0 0 18px rgba(212, 175, 55, 0.16);
+            border-color: rgba(244, 63, 94, 0.65) !important;
+        }
+        .live-dot { animation: pulse-live 1.4s infinite; }
+        .nba-tricolor-bar {
+            background: linear-gradient(90deg, #1D428A 0%, #3b82f6 35%, #d4af37 50%, #ef4444 65%, #C8102E 100%);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 font-sans min-h-screen selection:bg-[#d4af37] selection:text-black">
+
+    <div class="max-w-[95rem] mx-auto space-y-6">
+        
+        <!-- HEADER MIT NBA ARENA AKZENTEN (ROYAL BLUE • GOLD • CRIMSON) -->
+        <div class="relative overflow-hidden bg-gradient-to-r from-[#0d1528] via-[#111827] to-[#1e121b] border border-slate-800/90 rounded-2xl p-5 md:p-6 shadow-2xl">
+            <div class="nba-tricolor-bar h-1 w-full absolute top-0 left-0"></div>
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-[#090d16] border border-[#d4af37]/50 shadow-lg shadow-blue-950/50 overflow-hidden shrink-0">
+                        <img src="logo.png" alt="NBA Live Logo" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2.5">
+                            <h1 class="text-2xl md:text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-100 to-[#f3d474] bg-clip-text text-transparent">
+                                NBA LIVE DASHBOARD
+                            </h1>
+                            <span class="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-500/15 text-sky-300 border border-sky-400/30">
+                                Season 2026/27
+                            </span>
+                        </div>
+                        <p class="text-slate-400 text-sm mt-1">Echtzeit-Spielstände, Team-Farbwelten, Top Spieler-Ranking &amp; Conference Tabellen</p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <div id="live-indicator" class="hidden items-center gap-2 bg-rose-950/80 border border-rose-500/60 text-rose-200 px-3.5 py-2 rounded-xl text-xs font-extrabold shadow-lg shadow-rose-950/40">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 live-dot"></span>
+                        LIVE SPIEL LÄUFT (60s)
+                    </div>
+
+                    <!-- PUSH TOGGLE BUTTON (Nur NBA Endergebnisse) -->
+                    <button onclick="toggleNbaFinalsPush()" id="push-btn" class="bg-[#0b101d]/90 hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 font-medium px-3.5 py-2 rounded-xl shadow text-sm transition flex items-center gap-2">
+                        🔔 NBA Push (HZ &amp; Ende): <span id="push-status-text" class="text-slate-400">Aus</span>
+                    </button>
+
+                    <!-- ADMIN MODAL BUTTON -->
+                    <button onclick="openAdminModal()" class="bg-[#0b101d]/90 hover:bg-slate-800/90 border border-[#d4af37]/45 text-[#d4af37] font-semibold px-3.5 py-2 rounded-xl shadow text-sm transition flex items-center gap-2">
+                        🔐 Admin
+                    </button>
+
+                    <button onclick="refreshAllData()" class="bg-gradient-to-r from-[#d4af37] to-[#eab308] hover:from-[#e0bc46] hover:to-[#facc15] text-slate-950 font-extrabold px-4 py-2 rounded-xl shadow-lg shadow-[#d4af37]/20 transition flex items-center gap-2 text-sm">
+                        🔄 Aktualisieren
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SPIELTAGS-NAVIGATION -->
+        <div id="day-nav-wrapper" class="bg-gradient-to-r from-[#0e1525] via-[#111827] to-[#0e1525] border border-slate-800/90 rounded-2xl p-4 shadow-xl space-y-3">
+            <div class="flex flex-wrap items-center gap-2.5">
+                <button onclick="changeSelectedDay(-1)" class="bg-[#080c16] hover:bg-slate-800/90 border border-slate-700/80 hover:border-sky-500/40 text-slate-100 font-semibold px-4 py-2.5 rounded-2xl text-sm transition">
+                    &lt; Vorheriger Tag
+                </button>
+
+                <div class="relative flex items-center bg-[#080c16] border border-slate-700/80 hover:border-[#d4af37]/50 rounded-2xl px-4 py-2 text-sm font-bold text-white shadow-inner">
+                    <input type="date" id="date-picker" onchange="onDatePickerChange()" class="bg-transparent text-white font-bold tracking-wider focus:outline-none cursor-pointer [color-scheme:dark]">
+                </div>
+
+                <button onclick="changeSelectedDay(1)" class="bg-[#080c16] hover:bg-slate-800/90 border border-slate-700/80 hover:border-sky-500/40 text-slate-100 font-semibold px-4 py-2.5 rounded-2xl text-sm transition">
+                    Nächster Tag &gt;
+                </button>
+
+                <div class="hidden sm:block h-7 w-px bg-slate-800 mx-1"></div>
+
+                <button id="btn-quick-yesterday" onclick="selectQuickDay('yesterday')" class="bg-gradient-to-r from-[#2c2310] to-[#1f1a0e] border border-[#d4af37]/70 text-[#f3d474] font-bold px-4 py-2.5 rounded-2xl text-sm shadow shadow-[#d4af37]/10 transition">
+                    Gestern Nacht
+                </button>
+
+                <button id="btn-quick-today" onclick="selectQuickDay('today')" class="bg-[#080c16] hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 font-semibold px-4 py-2.5 rounded-2xl text-sm transition">
+                    Heute
+                </button>
+            </div>
+
+            <div class="border-t border-slate-800/80 pt-2.5 flex flex-wrap justify-between items-center gap-2 text-xs text-slate-400">
+                <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#d4af37]"></span>
+                    Ausgewählter Spieltag: <strong id="selected-date-label" class="text-[#f3d474]">-</strong>
+                </span>
+                <span id="games-count-badge" class="bg-[#080c16] border border-slate-800 text-sky-300 font-semibold px-2.5 py-0.5 rounded-full">Lade Spiele...</span>
+            </div>
+        </div>
+
+        <!-- TAB NAVIGATION -->
+        <div class="flex border-b border-slate-800/90 space-x-2 pt-1 overflow-x-auto custom-scroll">
+            <button id="tab-btn-games" onclick="switchTab('games')" class="px-5 py-2.5 font-bold text-sm rounded-t-xl bg-gradient-to-b from-[#172036] to-[#10141d] text-[#f3d474] border-t-2 border-x border-[#d4af37] border-x-slate-800 transition shadow whitespace-nowrap">
+                🏀 Alle NBA Spiele
+            </button>
+            <button id="tab-btn-top30" onclick="switchTab('top30')" class="px-5 py-2.5 font-bold text-sm rounded-t-xl bg-[#080c16]/70 text-slate-400 hover:text-white border border-transparent transition whitespace-nowrap">
+                ⭐ NBA Top Spieler-Ranking
+            </button>
+            <button id="tab-btn-standings" onclick="switchTab('standings')" class="px-5 py-2.5 font-bold text-sm rounded-t-xl bg-[#080c16]/70 text-slate-400 hover:text-white border border-transparent transition whitespace-nowrap">
+                📊 Conference Tabellen
+            </button>
+        </div>
+
+        <!-- TAB 1: ALLE NBA SPIELE -->
+        <div id="tab-content-games" class="space-y-6">
+            <div id="games-container" class="space-y-8">
+                <div class="text-center py-12 text-slate-400 animate-pulse">
+                    ⌛ Lade NBA-Spielplan von ESPN...
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: TOP SPIELER RANKING -->
+        <div id="tab-content-top30" class="hidden space-y-6">
+            <div class="bg-gradient-to-b from-[#111827] to-[#0c111d] p-6 rounded-2xl border border-slate-800 shadow-2xl space-y-4">
+                <div class="flex flex-wrap justify-between items-center border-b border-slate-800 pb-3 gap-2">
+                    <h2 class="text-xl font-extrabold text-[#f3d474] flex items-center gap-2">
+                        ⭐ NBA Top Spieler-Ranking
+                    </h2>
+                    <span class="text-xs bg-[#080c16] text-sky-300 px-3 py-1 rounded-full font-bold border border-sky-500/30">Klicke auf einen Spieler für Details</span>
+                </div>
+                <p class="text-sm text-slate-400">Offizielle Rangliste mit Team-Farbakzenten. Ein Klick öffnet das Statistik-Pop-up mit Spielerfoto:</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-2" id="top30-container">
+                    <!-- Wird per JS befüllt -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: CONFERENCE TABELLEN -->
+        <div id="tab-content-standings" class="hidden space-y-8">
+            
+            <!-- EASTERN CONFERENCE (Royal Blue Akzent) -->
+            <div class="relative overflow-hidden bg-gradient-to-b from-[#0f192e] to-[#0c111d] p-6 rounded-2xl border border-blue-900/50 space-y-4 shadow-xl">
+                <div class="h-1 w-full bg-gradient-to-r from-[#1D428A] via-sky-400 to-transparent absolute top-0 left-0"></div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2.5">
+                        <span class="px-2.5 py-0.5 rounded-lg bg-[#1D428A] text-white text-xs font-black tracking-wider border border-sky-400/40">EAST</span>
+                        <span>Eastern Conference</span>
+                    </h2>
+                    <div class="flex items-center gap-3 text-[11px] text-slate-300 bg-[#080c16]/80 px-3 py-1 rounded-full border border-slate-800">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#d4af37]"></span> Playoffs (1–6)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Play-In (7–10)</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-[#080c16] text-sky-300 uppercase text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="px-3 py-3 min-w-[195px]">Team</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">S</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">N</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">QUOTE</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">RÜCK</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">HEIM</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">AUSW</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIV</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">CONF</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">OPP PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIFF</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">SERIE</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">L10</th>
+                            </tr>
+                        </thead>
+                        <tbody id="east-table-body" class="divide-y divide-slate-800/70">
+                            <tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- WESTERN CONFERENCE (Crimson Red Akzent) -->
+            <div class="relative overflow-hidden bg-gradient-to-b from-[#231119] to-[#0c111d] p-6 rounded-2xl border border-rose-900/50 space-y-4 shadow-2xl">
+                <div class="h-1 w-full bg-gradient-to-r from-[#C8102E] via-rose-400 to-transparent absolute top-0 left-0"></div>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="text-xl font-extrabold text-white flex items-center gap-2.5">
+                        <span class="px-2.5 py-0.5 rounded-lg bg-[#C8102E] text-white text-xs font-black tracking-wider border border-rose-400/40">WEST</span>
+                        <span>Western Conference</span>
+                    </h2>
+                    <div class="flex items-center gap-3 text-[11px] text-slate-300 bg-[#080c16]/80 px-3 py-1 rounded-full border border-slate-800">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#d4af37]"></span> Playoffs (1–6)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Play-In (7–10)</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto custom-scroll">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="bg-[#080c16] text-rose-300 uppercase text-xs border-b border-slate-800">
+                            <tr>
+                                <th class="px-3 py-3 min-w-[195px]">Team</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">S</th>
+                                <th class="px-2 py-3 text-center min-w-[45px]">N</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">QUOTE</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">RÜCK</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">HEIM</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">AUSW</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIV</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">CONF</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">OPP PPG</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">DIFF</th>
+                                <th class="px-2 py-3 text-center min-w-[55px]">SERIE</th>
+                                <th class="px-2 py-3 text-center min-w-[65px]">L10</th>
+                            </tr>
+                        </thead>
+                        <tbody id="west-table-body" class="divide-y divide-slate-800/70">
+                            <tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Lade Tabelle...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- ADMIN-BEREICH MODAL (PASSWORT: 1919) -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#101624] border border-[#d4af37]/60 rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-5 gold-glow">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+
+            <div class="border-b border-slate-800 pb-3">
+                <h3 class="text-xl font-black text-[#f3d474] flex items-center gap-2">🔐 NBA Push Admin-Bereich</h3>
+                <p class="text-xs text-slate-400 mt-1">Test-Push an <code class="text-sky-300">push_subscriptions_celtics</code> auslösen</p>
+            </div>
+
+            <!-- Login -->
+            <div id="admin-login-box" class="space-y-3">
+                <label for="admin-pin-input" class="block text-xs font-bold uppercase text-slate-300">Passwort</label>
+                <input type="password" id="admin-pin-input" placeholder="Passwort eingeben" onkeydown="if(event.key==='Enter') unlockAdminArea()" class="w-full bg-[#080c16] border border-slate-700 focus:border-[#d4af37] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none">
+                <p id="admin-error-msg" class="text-xs text-rose-400 hidden">Falsches Passwort.</p>
+                <button onclick="unlockAdminArea()" class="w-full bg-gradient-to-r from-[#d4af37] to-[#eab308] hover:from-[#e0bc46] hover:to-[#facc15] text-slate-950 font-bold py-2.5 rounded-xl transition">
+                    Entsperren
+                </button>
+            </div>
+
+            <!-- Freigeschalteter Admin-Bereich -->
+            <div id="admin-controls-box" class="hidden space-y-4">
+                <div class="bg-[#080c16] p-3.5 rounded-xl border border-slate-800 space-y-2">
+                    <label for="admin-test-title" class="block text-[11px] font-bold uppercase text-slate-400">Titel</label>
+                    <input type="text" id="admin-test-title" value="🏀 NBA Endergebnis Test" class="w-full bg-[#101624] border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d4af37]">
+
+                    <label for="admin-test-body" class="block text-[11px] font-bold uppercase text-slate-400 pt-1">Nachricht</label>
+                    <input type="text" id="admin-test-body" value="Los Angeles Lakers 121 : 114 Denver Nuggets (Final)" class="w-full bg-[#101624] border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#d4af37]">
+                </div>
+
+                <button onclick="sendAdminTestPush()" id="admin-send-btn" class="w-full bg-gradient-to-r from-[#d4af37] to-[#eab308] hover:from-[#e0bc46] hover:to-[#facc15] text-slate-950 font-black py-2.5 rounded-xl transition shadow">
+                    🚀 Test-Push jetzt senden
+                </button>
+
+                <p id="admin-status-msg" class="text-xs text-emerald-400 min-h-[1rem]"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- POP-UP MODAL FÜR SPIELERDETAILS -->
+    <div id="player-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#101624] border border-[#d4af37]/50 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative space-y-5 gold-glow">
+            <button onclick="closePlayerModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            
+            <div class="flex items-center gap-4 border-b border-slate-800 pb-4">
+                <div class="w-16 h-16 rounded-full bg-[#080c16] flex items-center justify-center border-2 border-[#d4af37] overflow-hidden shrink-0 shadow-lg">
+                    <img id="modal-player-img" src="" class="w-full h-full object-cover" alt="Spielerfoto">
+                </div>
+                <div>
+                    <h3 class="text-xl font-black text-white" id="modal-player-name">Name</h3>
+                    <p class="text-xs text-[#f3d474] font-semibold mt-0.5" id="modal-player-team">Team</p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs text-[#f3d474] font-bold uppercase tracking-wider border-b border-slate-800 pb-1">
+                    <span>2026-27 Regular Season Stats</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">PTS</p>
+                        <p class="text-base font-black text-[#f3d474]" id="modal-stat-pts">0.0</p>
+                    </div>
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">REB</p>
+                        <p class="text-base font-black text-sky-300" id="modal-stat-reb">0.0</p>
+                    </div>
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">AST</p>
+                        <p class="text-base font-black text-white" id="modal-stat-ast">0.0</p>
+                    </div>
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase font-bold text-slate-400">FG%</p>
+                        <p class="text-base font-black text-emerald-400" id="modal-stat-fg">0.0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-xs text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-1">
+                    <span>Letztes Spiel</span>
+                    <span class="text-[10px] text-emerald-400" id="modal-last-status">Final</span>
+                </div>
+                <div class="bg-[#080c16] p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <img id="modal-last-opp-logo" src="" class="w-6 h-6 object-contain" alt="Gegner">
+                        <span class="text-xs font-bold text-white" id="modal-last-matchup">Team vs Opponent</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-black text-white" id="modal-last-score">118 - 110</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase text-slate-400">PTS</p>
+                        <p class="text-sm font-bold text-[#f3d474]" id="modal-last-pts">0</p>
+                    </div>
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase text-slate-400">REB</p>
+                        <p class="text-sm font-bold text-sky-300" id="modal-last-reb">0</p>
+                    </div>
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase text-slate-400">AST</p>
+                        <p class="text-sm font-bold text-white" id="modal-last-ast">0</p>
+                    </div>
+                    <div class="bg-[#080c16] p-2.5 rounded-xl border border-slate-800">
+                        <p class="text-[9px] uppercase text-slate-400">+/-</p>
+                        <p class="text-sm font-bold text-emerald-400" id="modal-last-plus">+0</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closePlayerModal()" class="w-full bg-gradient-to-r from-[#d4af37] to-[#eab308] hover:from-[#e0bc46] hover:to-[#facc15] text-slate-950 font-bold py-2.5 rounded-xl transition shadow">
+                Schließen
+            </button>
+        </div>
+    </div>
+
+    <!-- POP-UP MODAL FÜR TEAM-KADER -->
+    <div id="roster-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-[#101624] border border-[#d4af37]/50 rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative space-y-4 gold-glow flex flex-col max-h-[90vh]">
+            <button onclick="closeRosterModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+            
+            <div class="flex items-center gap-4 border-b border-slate-800 pb-4 shrink-0">
+                <img id="modal-team-logo" src="" class="w-14 h-14 object-contain bg-[#080c16] p-1.5 rounded-xl border border-[#d4af37]/50" alt="Logo">
+                <div>
+                    <h3 class="text-2xl font-black text-white" id="modal-team-name">Team Roster</h3>
+                    <p class="text-xs text-[#f3d474] font-semibold mt-0.5">Offizieller Spieler-Kader</p>
+                </div>
+            </div>
+
+            <div class="overflow-y-auto custom-scroll flex-grow pr-2">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-[#080c16] text-sky-300 uppercase text-xs sticky top-0">
+                        <tr>
+                            <th class="px-3 py-2.5">Name</th>
+                            <th class="px-3 py-2.5 text-center">Pos</th>
+                            <th class="px-3 py-2.5 text-center">Alter</th>
+                            <th class="px-3 py-2.5 text-center">Größe</th>
+                            <th class="px-3 py-2.5 text-center">Gewicht</th>
+                            <th class="px-3 py-2.5">College</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roster-table-body" class="divide-y divide-slate-800/70">
+                        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Lade Kader...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button onclick="closeRosterModal()" class="w-full bg-gradient-to-r from-[#d4af37] to-[#eab308] hover:from-[#e0bc46] hover:to-[#facc15] text-slate-950 font-bold py-2.5 rounded-xl transition shadow shrink-0">
+                Schließen
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIK -->
+    <script>
+        // --- SUPABASE & WEB PUSH KONFIGURATION ---
+        const SUPABASE_URL = 'https://lhusylpjnujlqomougmg.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_yXEueWILvAq-Vm2VfTuYyg_BIQeE1KK';
+        const VAPID_PUBLIC_KEY = 'BAsnfWgySLti5LzulXfN-xI-x7UDV32LO98YXgg1qdoRY1E1Tl05QPgCvOMgfwe80cSv_K7336-dhJTgBkHUI70';
+        const PUSH_TABLE = 'push_subscriptions_celtics';
+        const SENT_EVENTS_TABLE = 'push_sent_events_nba';
+        const EDGE_FUNCTION_NAME = 'send-push';
+        const ADMIN_PASSWORD = '1919';
+
+        const supabaseClient = (typeof supabase !== "undefined" && SUPABASE_URL.startsWith("https://"))
+            ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+            : null;
+
+        let nbaEvents = [];
+        let autoRefreshTimer = null;
+        let pushActive = false;
+        let activeTab = 'games';
+        let swRegistration = null;
+        let currentSelectedDateStr = "";
+        const notifiedFinalKeys = new Set();
+
+        const nbaLogo = new URL("logo.png", window.location.href).href;
+
+        // --- OFFIZIELLE NBA TEAM-FARBEN FÜR DYNAMISCHE KARTEN-GRADIENTS ---
+        const nbaTeamColors = {
+            "ATL": "#E03A3E", "BOS": "#007A33", "BKN": "#707885", "CHA": "#00788C",
+            "CHI": "#CE1141", "CLE": "#860038", "DAL": "#00538C", "DEN": "#FEC524",
+            "DET": "#C8102E", "GSW": "#1D428A", "GS": "#1D428A", "HOU": "#CE1141",
+            "IND": "#FDBB30", "LAC": "#C8102E", "LAL": "#552583", "MEM": "#5D76A9",
+            "MIA": "#98002E", "MIL": "#00471B", "MIN": "#236192", "NOP": "#0C2340",
+            "NO": "#0C2340", "NYK": "#F58426", "NY": "#F58426", "OKC": "#007AC1",
+            "ORL": "#0077C0", "PHI": "#006BB6", "PHX": "#E56020", "POR": "#E03A3E",
+            "SAC": "#5A2D81", "SAS": "#8A8D8F", "SA": "#8A8D8F", "TOR": "#CE1141",
+            "UTA": "#002B5C", "UTAH": "#002B5C", "WAS": "#E31837", "WSH": "#E31837"
+        };
+
+        function getTeamColor(abbr) {
+            if (!abbr) return "#334155";
+            return nbaTeamColors[String(abbr).toUpperCase()] || "#334155";
+        }
+
+        const teamCodeMap = {
+            "DEN": "den", "SA": "sas", "OKC": "okc", "LAL": "lal", "PHI": "phi",
+            "CLE": "cle", "BOS": "bos", "ATL": "atl", "DAL": "dal", "DET": "det",
+            "IND": "ind", "MEM": "mem", "HOU": "hou", "MIN": "min", "TOR": "tor",
+            "WSH": "was", "NY": "nyk", "MIA": "mia", "CHA": "cha", "PHX": "phx",
+            "SAC": "sac", "ORL": "orl", "MIL": "mil", "NOP": "nop", "CHI": "chi",
+            "BKN": "bkn", "UTA": "uta", "POR": "por", "LAC": "lac", "GSW": "gsw"
+        };
+
+        const top30Players = [
+            { rank: 1, id: "3112335", name: "Nikola Jokic", team: "DEN", pos: "Center", ppg: "29.7", rpg: "13.7", apg: "11.7", fg: "58.3%", lastMatch: "vs. Trail Blazers", lastScore: "118 - 110", lastPts: "26", lastReb: "9", lastAst: "8", lastPlus: "-3" },
+            { rank: 2, id: "4278073", name: "Shai Gilgeous-Alexander", team: "OKC", pos: "Guard", ppg: "31.2", rpg: "5.5", apg: "6.2", fg: "53.5%", lastMatch: "vs. Pelicans", lastScore: "120 - 112", lastPts: "35", lastReb: "6", lastAst: "7", lastPlus: "+14" },
+            { rank: 3, id: "3945274", name: "Luka Doncic", team: "LAL", pos: "Guard", ppg: "33.9", rpg: "9.2", apg: "9.8", fg: "48.7%", lastMatch: "@ Suns", lastScore: "128 - 122", lastPts: "38", lastReb: "10", lastAst: "11", lastPlus: "+12" },
+            { rank: 4, id: "5104157", name: "Victor Wembanyama", team: "SA", pos: "Center", ppg: "24.3", rpg: "11.0", apg: "3.8", fg: "46.5%", lastMatch: "vs. Jazz", lastScore: "115 - 105", lastPts: "28", lastReb: "12", lastAst: "4", lastPlus: "+8" },
+            { rank: 5, id: "4701230", name: "Jalen Johnson", team: "ATL", pos: "Forward", ppg: "16.0", rpg: "8.7", apg: "3.6", fg: "51.0%", lastMatch: "@ Knicks", lastScore: "110 - 116", lastPts: "20", lastReb: "9", lastAst: "4", lastPlus: "+2" },
+            { rank: 6, id: "3032977", name: "Giannis Antetokounmpo", team: "MIA", pos: "Forward", ppg: "30.4", rpg: "11.9", apg: "6.5", fg: "61.1%", lastMatch: "vs. Bucks", lastScore: "125 - 118", lastPts: "32", lastReb: "12", lastAst: "5", lastPlus: "+10" },
+            { rank: 7, id: "4432166", name: "Cade Cunningham", team: "DET", pos: "Guard", ppg: "22.7", rpg: "4.3", apg: "7.5", fg: "44.9%", lastMatch: "vs. Bulls", lastScore: "105 - 108", lastPts: "24", lastReb: "5", lastAst: "8", lastPlus: "-2" },
+            { rank: 8, id: "4065648", name: "Jayson Tatum", team: "BOS", pos: "Forward", ppg: "28.3", rpg: "8.1", apg: "4.9", fg: "47.1%", lastMatch: "@ Pacers", lastScore: "129 - 124", lastPts: "29", lastReb: "8", lastAst: "6", lastPlus: "+15" },
+            { rank: 9, id: "5041939", name: "Cooper Flagg", team: "DAL", pos: "Forward", ppg: "21.0", rpg: "7.5", apg: "4.0", fg: "49.0%", lastMatch: "vs. Kings", lastScore: "112 - 108", lastPts: "22", lastReb: "8", lastAst: "3", lastPlus: "+5" },
+            { rank: 10, id: "4431678", name: "Tyrese Maxey", team: "PHI", pos: "Guard", ppg: "25.9", rpg: "3.3", apg: "6.2", fg: "44.8%", lastMatch: "@ Raptors", lastScore: "114 - 109", lastPts: "27", lastReb: "4", lastAst: "7", lastPlus: "+6" },
+            { rank: 11, id: "3908809", name: "Donovan Mitchell", team: "CLE", pos: "Guard", ppg: "26.5", rpg: "5.1", apg: "6.1", fg: "46.2%", lastMatch: "vs. Magic", lastScore: "120 - 110", lastPts: "29", lastReb: "5", lastAst: "6", lastPlus: "+9" },
+            { rank: 12, id: "3136193", name: "Devin Booker", team: "PHX", pos: "Guard", ppg: "27.1", rpg: "4.5", apg: "6.9", fg: "46.5%", lastMatch: "vs. Lakers", lastScore: "122 - 128", lastPts: "31", lastReb: "4", lastAst: "7", lastPlus: "-4" },
+            { rank: 13, id: "3155942", name: "Domantas Sabonis", team: "SAC", pos: "Center", ppg: "19.4", rpg: "13.7", apg: "8.2", fg: "60.1%", lastMatch: "@ Warriors", lastScore: "119 - 115", lastPts: "18", lastReb: "15", lastAst: "7", lastPlus: "+7" },
+            { rank: 14, id: "4277905", name: "Trae Young", team: "ATL", pos: "Guard", ppg: "25.7", rpg: "2.8", apg: "10.8", fg: "43.0%", lastMatch: "vs. Hornets", lastScore: "130 - 124", lastPts: "28", lastReb: "3", lastAst: "12", lastPlus: "+4" },
+            { rank: 15, id: "4684740", name: "Amen Thompson", team: "HOU", pos: "Forward", ppg: "9.5", rpg: "6.6", apg: "2.6", fg: "53.6%", lastMatch: "@ Spurs", lastScore: "108 - 102", lastPts: "12", lastReb: "7", lastAst: "3", lastPlus: "+6" },
+            { rank: 16, id: "4065733", name: "Ty Jerome", team: "MEM", pos: "Guard", ppg: "12.4", rpg: "2.5", apg: "4.1", fg: "51.2%", lastMatch: "vs. Timberwolves", lastScore: "111 - 105", lastPts: "15", lastReb: "3", lastAst: "5", lastPlus: "+4" },
+            { rank: 17, id: "4396993", name: "Tyrese Haliburton", team: "IND", pos: "Guard", ppg: "20.1", rpg: "3.9", apg: "10.9", fg: "47.7%", lastMatch: "vs. Celtics", lastScore: "124 - 129", lastPts: "22", lastReb: "4", lastAst: "11", lastPlus: "-5" },
+            { rank: 18, id: "4871144", name: "Alperen Sengun", team: "HOU", pos: "Center", ppg: "21.1", rpg: "10.3", apg: "4.9", fg: "53.7%", lastMatch: "vs. Nuggets", lastScore: "110 - 115", lastPts: "20", lastReb: "11", lastAst: "5", lastPlus: "-2" },
+            { rank: 19, id: "3136195", name: "Karl-Anthony Towns", team: "NY", pos: "Center", ppg: "21.8", rpg: "11.5", apg: "3.0", fg: "50.4%", lastMatch: "vs. Hawks", lastScore: "116 - 110", lastPts: "25", lastReb: "12", lastAst: "3", lastPlus: "+6" },
+            { rank: 20, id: "4432816", name: "LaMelo Ball", team: "MIN", pos: "Guard", ppg: "23.9", rpg: "5.1", apg: "8.0", fg: "43.3%", lastMatch: "@ Grizzlies", lastScore: "105 - 111", lastPts: "24", lastReb: "5", lastAst: "7", lastPlus: "-3" },
+            { rank: 21, id: "3202", name: "Kevin Durant", team: "HOU", pos: "Forward", ppg: "27.1", rpg: "6.6", apg: "5.0", fg: "52.3%", lastMatch: "vs. Suns", lastScore: "118 - 112", lastPts: "29", lastReb: "7", lastAst: "4", lastPlus: "+7" },
+            { rank: 22, id: "3992", name: "James Harden", team: "CLE", pos: "Guard", ppg: "16.6", rpg: "5.1", apg: "8.5", fg: "41.0%", lastMatch: "@ Heat", lastScore: "112 - 108", lastPts: "18", lastReb: "6", lastAst: "9", lastPlus: "+5" },
+            { rank: 23, id: "3975", name: "Stephen Curry", team: "GSW", pos: "Guard", ppg: "29.2", rpg: "3.8", apg: "4.0", fg: "47.7%", lastMatch: "vs. Kings", lastScore: "115 - 119", lastPts: "32", lastReb: "4", lastAst: "5", lastPlus: "-2" },
+            { rank: 24, id: "1966", name: "LeBron James", team: "LAL", pos: "Forward", ppg: "25.4", rpg: "7.3", apg: "8.3", fg: "54.0%", lastMatch: "@ Suns", lastScore: "128 - 122", lastPts: "27", lastReb: "8", lastAst: "9", lastPlus: "+10" },
+            { rank: 25, id: "4566434", name: "Franz Wagner", team: "ORL", pos: "Forward", ppg: "19.7", rpg: "5.3", apg: "3.7", fg: "48.2%", lastMatch: "@ Cavaliers", lastScore: "110 - 120", lastPts: "21", lastReb: "5", lastAst: "4", lastPlus: "-4" }
+        ];
+
+        // --- DATUMS-LOGIK ---
+        function toIsoDate(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getRelativeIsoDate(offsetDays) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            return toIsoDate(d);
+        }
+
+        function updateDayNavigationUi(isoDate) {
+            currentSelectedDateStr = isoDate;
+            const picker = document.getElementById("date-picker");
+            if (picker && picker.value !== isoDate) {
+                picker.value = isoDate;
+            }
+
+            const [y, m, d] = isoDate.split("-").map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const labelEl = document.getElementById("selected-date-label");
+            if (labelEl) {
+                const formatted = dateObj.toLocaleDateString("de-DE", {
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                });
+                labelEl.innerText = `${formatted} (${isoDate})`;
+            }
+
+            const yesterdayIso = getRelativeIsoDate(-1);
+            const todayIso = getRelativeIsoDate(0);
+
+            const btnYesterday = document.getElementById("btn-quick-yesterday");
+            const btnToday = document.getElementById("btn-quick-today");
+
+            const activeQuickClass = "bg-gradient-to-r from-[#2c2310] to-[#1f1a0e] border border-[#d4af37]/70 text-[#f3d474] font-bold px-4 py-2.5 rounded-2xl text-sm shadow shadow-[#d4af37]/10 transition";
+            const inactiveQuickClass = "bg-[#080c16] hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 font-semibold px-4 py-2.5 rounded-2xl text-sm transition";
+
+            if (btnYesterday) {
+                btnYesterday.className = (isoDate === yesterdayIso) ? activeQuickClass : inactiveQuickClass;
+            }
+            if (btnToday) {
+                btnToday.className = (isoDate === todayIso) ? activeQuickClass : inactiveQuickClass;
+            }
+        }
+
+        function selectDateAndLoad(isoDate) {
+            updateDayNavigationUi(isoDate);
+            const espnDate = isoDate.replace(/-/g, "");
+            loadSingleDateGames(espnDate);
+        }
+
+        function changeSelectedDay(deltaDays) {
+            const baseIso = currentSelectedDateStr || getRelativeIsoDate(-1);
+            const [y, m, d] = baseIso.split("-").map(Number);
+            const dt = new Date(y, m - 1, d);
+            dt.setDate(dt.getDate() + deltaDays);
+            selectDateAndLoad(toIsoDate(dt));
+        }
+
+        function selectQuickDay(mode) {
+            if (mode === "yesterday") {
+                selectDateAndLoad(getRelativeIsoDate(-1));
+            } else if (mode === "today") {
+                selectDateAndLoad(getRelativeIsoDate(0));
+            }
+        }
+
+        function onDatePickerChange() {
+            const val = document.getElementById("date-picker").value;
+            if (val) {
+                selectDateAndLoad(val);
+            }
+        }
+
+        // --- ADMIN MODAL LOGIK (PASSWORT: 1919) ---
+        function openAdminModal() {
+            document.getElementById("admin-pin-input").value = "";
+            document.getElementById("admin-error-msg").classList.add("hidden");
+            document.getElementById("admin-status-msg").innerText = "";
+            document.getElementById("admin-login-box").classList.remove("hidden");
+            document.getElementById("admin-controls-box").classList.add("hidden");
+            document.getElementById("admin-modal").classList.remove("hidden");
+        }
+
+        function closeAdminModal() {
+            document.getElementById("admin-modal").classList.add("hidden");
+        }
+
+        function unlockAdminArea() {
+            const pin = document.getElementById("admin-pin-input").value.trim();
+            if (pin === ADMIN_PASSWORD) {
+                document.getElementById("admin-error-msg").classList.add("hidden");
+                document.getElementById("admin-login-box").classList.add("hidden");
+                document.getElementById("admin-controls-box").classList.remove("hidden");
+            } else {
+                document.getElementById("admin-error-msg").classList.remove("hidden");
+            }
+        }
+
+        async function sendAdminTestPush() {
+            const statusEl = document.getElementById("admin-status-msg");
+            const btn = document.getElementById("admin-send-btn");
+            const title = document.getElementById("admin-test-title").value.trim() || "🏀 NBA Endergebnis Test";
+            const body = document.getElementById("admin-test-body").value.trim() || "Test-Benachrichtigung";
+
+            if (!supabaseClient) {
+                statusEl.className = "text-xs text-rose-400";
+                statusEl.innerText = "Supabase Client nicht verfügbar.";
+                return;
+            }
+
+            btn.disabled = true;
+            statusEl.className = "text-xs text-slate-300";
+            statusEl.innerText = "Sende Test-Push...";
+
+            try {
+                const { error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                    body: {
+                        table: PUSH_TABLE,
+                        eventKey: `admin_test_${Date.now()}`,
+                        title,
+                        body,
+                        icon: nbaLogo,
+                        url: window.location.href
+                    }
+                });
+
+                if (error) {
+                    statusEl.className = "text-xs text-rose-400";
+                    statusEl.innerText = `Fehler: ${error.message}`;
+                } else {
+                    statusEl.className = "text-xs text-emerald-400 font-semibold";
+                    statusEl.innerText = "Test-Push an send-push übergeben.";
+                }
+            } catch (err) {
+                statusEl.className = "text-xs text-rose-400";
+                statusEl.innerText = `Fehler: ${err.message || err}`;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- SERVICE WORKER & SUPABASE PUSH HELFER ---
+        function urlBase64ToUint8Array(base64String) {
+            const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+            const rawData = window.atob(base64);
+            return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+        }
+
+        async function registerPushServiceWorker() {
+            if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+                return null;
+            }
+            try {
+                swRegistration = await navigator.serviceWorker.register("./sw.js");
+                const existingSub = await swRegistration.pushManager.getSubscription();
+                if (existingSub) {
+                    updatePushUi(true);
+                }
+                return swRegistration;
+            } catch (err) {
+                console.error("Service Worker Registrierung fehlgeschlagen:", err);
+                return null;
+            }
+        }
+
+        function updatePushUi(active) {
+            pushActive = active;
+            const statusText = document.getElementById("push-status-text");
+            const btn = document.getElementById("push-btn");
+            if (active) {
+                statusText.innerText = "Aktiv (HZ & Ende)";
+                statusText.className = "text-emerald-300 font-bold";
+                btn.className = "bg-emerald-950/70 border border-emerald-500/60 text-emerald-200 font-medium px-3.5 py-2 rounded-xl shadow text-sm transition flex items-center gap-2";
+            } else {
+                statusText.innerText = "Aus";
+                statusText.className = "text-slate-400";
+                btn.className = "bg-[#0b101d]/90 hover:bg-slate-800/90 border border-slate-700/80 text-slate-200 font-medium px-3.5 py-2 rounded-xl shadow text-sm transition flex items-center gap-2";
+            }
+        }
+
+        async function saveSubscriptionToSupabase(subscription) {
+            if (!supabaseClient) return;
+            const subJson = subscription.toJSON();
+            const payload = {
+                endpoint: subJson.endpoint,
+                p256dh: subJson.keys?.p256dh || null,
+                auth: subJson.keys?.auth || null,
+                subscription: subJson,
+                team: "NBA_ALL_FINALS",
+                updated_at: new Date().toISOString()
+            };
+
+            const { error } = await supabaseClient
+                .from(PUSH_TABLE)
+                .upsert(payload, { onConflict: "endpoint" });
+
+            if (error) {
+                console.error(`Fehler beim Speichern in ${PUSH_TABLE}:`, error);
+            }
+        }
+
+        async function removeSubscriptionFromSupabase(endpoint) {
+            if (!supabaseClient || !endpoint) return;
+            const { error } = await supabaseClient
+                .from(PUSH_TABLE)
+                .delete()
+                .eq("endpoint", endpoint);
+
+            if (error) {
+                console.error(`Fehler beim Löschen aus ${PUSH_TABLE}:`, error);
+            }
+        }
+
+        async function toggleNbaFinalsPush() {
+            if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+                alert("Dein Browser unterstützt keine Web-Push-Benachrichtigungen.");
+                return;
+            }
+
+            const reg = swRegistration || await registerPushServiceWorker();
+            if (!reg) {
+                alert("Service Worker (./sw.js) konnte nicht registriert werden.");
+                return;
+            }
+
+            if (!pushActive) {
+                const permission = await Notification.requestPermission();
+                if (permission !== "granted") {
+                    alert("Benachrichtigungen wurden im Browser nicht erlaubt.");
+                    return;
+                }
+
+                try {
+                    const subscription = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                    await saveSubscriptionToSupabase(subscription);
+                    updatePushUi(true);
+                    evaluateAllNbaPushes(nbaEvents);
+                } catch (err) {
+                    console.error("Push-Abo fehlgeschlagen:", err);
+                    alert("Push-Abo konnte nicht erstellt werden.");
+                }
+            } else {
+                try {
+                    const currentSub = await reg.pushManager.getSubscription();
+                    if (currentSub) {
+                        await removeSubscriptionFromSupabase(currentSub.endpoint);
+                        await currentSub.unsubscribe();
+                    }
+                    updatePushUi(false);
+                } catch (err) {
+                    console.error("Fehler beim Deaktivieren des Push-Abos:", err);
+                }
+            }
+        }
+
+        async function claimFinalEventOnce(eventKey) {
+            if (notifiedFinalKeys.has(eventKey)) return false;
+            notifiedFinalKeys.add(eventKey);
+
+            if (!supabaseClient) return true;
+
+            const { error } = await supabaseClient
+                .from(SENT_EVENTS_TABLE)
+                .insert({ event_key: eventKey });
+
+            if (error) {
+                if (error.code === "23505") {
+                    return false;
+                }
+                console.warn("Hinweis beim Prüfen von push_sent_events_nba:", error.message);
+            }
+            return true;
+        }
+
+        async function evaluateAllNbaPushes(events) {
+            if (!pushActive || !supabaseClient || !Array.isArray(events)) return;
+
+            for (const event of events) {
+                const statusType = event.status?.type || {};
+                const statusName = String(statusType.name || "");
+                const shortDetail = String(statusType.shortDetail || "");
+
+                const isHalftime =
+                    statusType.state === "in" &&
+                    (statusName === "STATUS_HALFTIME" || shortDetail.toLowerCase().includes("half"));
+
+                const isFinal = Boolean(statusType.completed) || statusType.state === "post";
+
+                if (!isHalftime && !isFinal) continue;
+
+                const competition = event.competitions?.[0];
+                const home = competition?.competitors?.find(c => c.homeAway === "home");
+                const away = competition?.competitors?.find(c => c.homeAway === "away");
+                if (!home || !away) continue;
+
+                const awayName = away.team?.displayName || away.team?.shortDisplayName || away.team?.abbreviation || "Away";
+                const homeName = home.team?.displayName || home.team?.shortDisplayName || home.team?.abbreviation || "Home";
+                const awayScore = away.score ?? "0";
+                const homeScore = home.score ?? "0";
+
+                const phase = isFinal ? "final" : "halftime";
+                const detail = isFinal ? (shortDetail || "Final") : "Halbzeit";
+                const eventKey = `nba_${phase}_${event.id}_${awayScore}-${homeScore}`;
+
+                const shouldSend = await claimFinalEventOnce(eventKey);
+                if (!shouldSend) continue;
+
+                const title = isFinal ? "🏀 NBA Endergebnis" : "⏸️ NBA Halbzeitergebnis";
+                const body = `${awayName} ${awayScore} : ${homeScore} ${homeName} (${detail})`;
+
+                try {
+                    const { error } = await supabaseClient.functions.invoke(EDGE_FUNCTION_NAME, {
+                        body: {
+                            table: PUSH_TABLE,
+                            eventKey,
+                            title,
+                            body,
+                            icon: nbaLogo,
+                            url: window.location.href
+                        }
+                    });
+                    if (error) {
+                        console.error("Fehler beim Aufruf von send-push:", error);
+                    }
+                } catch (err) {
+                    console.error("Edge Function Invoke fehlgeschlagen:", err);
+                }
+            }
+        }
+
+        function switchTab(tabName) {
+            activeTab = tabName;
+            const tabs = ['games', 'top30', 'standings'];
+            
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const content = document.getElementById(`tab-content-${t}`);
+
+                if (t === tabName) {
+                    btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-xl bg-gradient-to-b from-[#172036] to-[#10141d] text-[#f3d474] border-t-2 border-x border-[#d4af37] border-x-slate-800 transition shadow whitespace-nowrap";
+                    content.classList.remove("hidden");
+                } else {
+                    btn.className = "px-5 py-2.5 font-bold text-sm rounded-t-xl bg-[#080c16]/70 text-slate-400 hover:text-white border border-transparent transition whitespace-nowrap";
+                    content.classList.add("hidden");
+                }
+            });
+
+            const dayNav = document.getElementById("day-nav-wrapper");
+            if (tabName === 'games') {
+                dayNav.classList.remove("hidden");
+                if (!currentSelectedDateStr) {
+                    selectDateAndLoad(getRelativeIsoDate(-1));
+                }
+            } else {
+                dayNav.classList.add("hidden");
+                if (tabName === 'top30') {
+                    renderTop30List();
+                }
+            }
+        }
+
+        async function refreshAllData() {
+            if (activeTab === 'games') {
+                const iso = currentSelectedDateStr || getRelativeIsoDate(-1);
+                await selectDateAndLoad(iso);
+            } else if (activeTab === 'top30') {
+                renderTop30List();
+            }
+            await loadNbaStandings();
+        }
+
+        async function loadSingleDateGames(dateStr) {
+            const container = document.getElementById("games-container");
+            const countBadge = document.getElementById("games-count-badge");
+            container.innerHTML = '<div class="text-center py-12 text-slate-400 animate-pulse">⌛ Lade Spiele von ESPN...</div>';
+            if (countBadge) countBadge.innerText = "Lade Spiele...";
+
+            try {
+                const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=${dateStr}`);
+                const data = await response.json();
+                nbaEvents = data.events || [];
+                nbaEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                if (countBadge) {
+                    countBadge.innerText = nbaEvents.length === 1 ? "1 Spiel gefunden" : `${nbaEvents.length} Spiele gefunden`;
+                }
+
+                checkLiveState();
+                await evaluateAllNbaPushes(nbaEvents);
+                renderGamesToContainer(nbaEvents, container);
+            } catch (error) {
+                console.error("Fehler:", error);
+                if (countBadge) countBadge.innerText = "Fehler beim Abruf";
+                container.innerHTML = '<div class="text-center py-8 text-rose-400">⚠️ Fehler beim Laden der Spiele.</div>';
+            }
+        }
+
+        function renderTop30List() {
+            const container = document.getElementById("top30-container");
+            container.innerHTML = "";
+
+            top30Players.forEach(p => {
+                const teamColor = getTeamColor(p.team);
+                const card = document.createElement("div");
+                card.className = "relative overflow-hidden bg-[#0a0f1c] p-3.5 rounded-xl border border-slate-800 hover:border-[#d4af37]/60 cursor-pointer transition flex items-center justify-between group shadow-md";
+                card.style.backgroundImage = `linear-gradient(125deg, ${teamColor}26 0%, rgba(10, 15, 28, 0.96) 55%)`;
+                card.onclick = () => openPlayerModal(p);
+
+                const thumbUrl = `https://a.espncdn.com/i/headshots/nba/players/full/${p.id}.png`;
+                const fallbackLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${teamCodeMap[p.team] || 'nba'}.png`;
+
+                let rankBadgeClass = "text-[#f3d474]";
+                if (p.rank === 1) rankBadgeClass = "text-amber-300 drop-shadow";
+                else if (p.rank <= 3) rankBadgeClass = "text-sky-300";
+
+                card.innerHTML = `
+                    <div class="w-1 h-full absolute left-0 top-0" style="background-color: ${teamColor}"></div>
+                    <div class="flex items-center gap-3 pl-1.5">
+                        <span class="w-7 font-black ${rankBadgeClass} text-base">${p.rank}.</span>
+                        <img src="${thumbUrl}" class="w-11 h-11 rounded-full object-cover bg-[#101624] border-2 shrink-0" style="border-color: ${teamColor}" onerror="this.src='${fallbackLogo}'" alt="">
+                        <div>
+                            <p class="font-bold text-white text-sm group-hover:text-[#f3d474] transition">${p.name}</p>
+                            <p class="text-[11px] text-slate-300 flex items-center gap-1.5">
+                                <span class="font-extrabold px-1.5 py-0.2 rounded text-[10px] text-white" style="background-color: ${teamColor}aa">${p.team}</span>
+                                <span class="text-slate-400">${p.pos}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <span class="text-xs bg-[#101624]/90 text-[#f3d474] px-2.5 py-1 rounded-lg border border-slate-700/80 group-hover:border-[#d4af37]/60 transition font-semibold">Details 📊</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openPlayerModal(player) {
+            document.getElementById("modal-player-name").innerText = player.name;
+            document.getElementById("modal-player-team").innerText = `${player.team} • ${player.pos}`;
+            
+            const imgElement = document.getElementById("modal-player-img");
+            const primaryImg = `https://a.espncdn.com/i/headshots/nba/players/full/${player.id}.png`;
+            const fallbackLogo = `https://a.espncdn.com/i/teamlogos/nba/500/${teamCodeMap[player.team] || 'nba'}.png`;
+
+            imgElement.src = primaryImg;
+            imgElement.onerror = function() {
+                this.src = fallbackLogo;
+            };
+
+            document.getElementById("modal-stat-pts").innerText = player.ppg;
+            document.getElementById("modal-stat-reb").innerText = player.rpg;
+            document.getElementById("modal-stat-ast").innerText = player.apg;
+            document.getElementById("modal-stat-fg").innerText = player.fg;
+
+            document.getElementById("modal-last-pts").innerText = player.lastPts || "20";
+            document.getElementById("modal-last-reb").innerText = player.lastReb || "6";
+            document.getElementById("modal-last-ast").innerText = player.lastAst || "5";
+            document.getElementById("modal-last-plus").innerText = player.lastPlus || "+5";
+            document.getElementById("modal-last-matchup").innerText = player.lastMatch || (player.team + " Game");
+            document.getElementById("modal-last-score").innerText = player.lastScore || "115 - 110";
+            document.getElementById("modal-last-opp-logo").src = fallbackLogo;
+
+            document.getElementById("player-modal").classList.remove("hidden");
+        }
+
+        function closePlayerModal() {
+            document.getElementById("player-modal").classList.add("hidden");
+        }
+
+        async function openTeamRosterModal(teamId, teamName, teamLogo) {
+            let resolvedId = teamId;
+            if (!resolvedId) {
+                const nameToId = {
+                    "Denver Nuggets": "7", "Oklahoma City Thunder": "25", "Los Angeles Lakers": "13", "San Antonio Spurs": "24",
+                    "Atlanta Hawks": "1", "Miami Heat": "14", "Detroit Pistons": "8", "Boston Celtics": "2", "Dallas Mavericks": "6",
+                    "Philadelphia 76ers": "20", "Cleveland Cavaliers": "5", "Phoenix Suns": "21", "Sacramento Kings": "23",
+                    "Houston Rockets": "10", "Memphis Grizzlies": "29", "Indiana Pacers": "11", "New York Knicks": "18",
+                    "Minnesota Timberwolves": "16", "Golden State Warriors": "9", "Orlando Magic": "19", "Toronto Raptors": "28",
+                    "Milwaukee Bucks": "15", "New Orleans Pelicans": "3", "Chicago Bulls": "4", "Brooklyn Nets": "17",
+                    "Utah Jazz": "26", "Portland Trail Blazers": "22", "LA Clippers": "12", "Washington Wizards": "27", "Charlotte Hornets": "30"
+                };
+                resolvedId = nameToId[teamName] || "1";
+            }
+
+            document.getElementById("modal-team-name").innerText = `${teamName} Roster`;
+            document.getElementById("modal-team-logo").src = teamLogo;
+            
+            const tbody = document.getElementById("roster-table-body");
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400 animate-pulse">Lade Spieler-Kader von ESPN...</td></tr>';
+            
+            document.getElementById("roster-modal").classList.remove("hidden");
+
+            try {
+                const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${resolvedId}/roster`);
+                const data = await res.json();
+                
+                const athletes = data.athletes || [];
+                tbody.innerHTML = "";
+
+                if (athletes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Keine Spieler gefunden.</td></tr>';
+                    return;
+                }
+
+                athletes.forEach((player, idx) => {
+                    const row = document.createElement("tr");
+                    row.className = idx % 2 === 0 ? "bg-[#080c16]/60 hover:bg-slate-800/70 transition" : "bg-transparent hover:bg-slate-800/70 transition";
+                    
+                    const headshot = player.headshot?.href || teamLogo;
+                    const name = player.fullName || player.displayName || "Unbekannt";
+                    const pos = player.position?.abbreviation || "-";
+                    const age = player.age || "-";
+                    const height = player.displayHeight || "-";
+                    const weight = player.displayWeight ? `${player.displayWeight} lbs` : "-";
+                    const college = player.college?.name || "-";
+
+                    row.innerHTML = `
+                        <td class="px-3 py-2.5 font-bold text-white flex items-center gap-3">
+                            <img src="${headshot}" class="w-8 h-8 rounded-full object-cover bg-[#080c16] border border-slate-700 shrink-0" onerror="this.src='${teamLogo}'" alt="">
+                            <span>${name}</span>
+                        </td>
+                        <td class="px-3 py-2.5 text-center text-[#f3d474] font-bold">${pos}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-300">${age}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-300">${height}</td>
+                        <td class="px-3 py-2.5 text-center text-slate-300">${weight}</td>
+                        <td class="px-3 py-2.5 text-slate-400 text-xs">${college}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+            } catch (e) {
+                console.error("Fehler beim Laden des Rosters:", e);
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-rose-400">Fehler beim Laden des Kaders.</td></tr>';
+            }
+        }
+
+        function closeRosterModal() {
+            document.getElementById("roster-modal").classList.add("hidden");
+        }
+
+        function checkLiveState() {
+            const isLive = nbaEvents.some(e => e.status?.type?.state === "in");
+            const liveIndicator = document.getElementById("live-indicator");
+
+            if (isLive) {
+                liveIndicator.classList.remove("hidden");
+                liveIndicator.classList.add("flex");
+                if (!autoRefreshTimer) {
+                    autoRefreshTimer = setInterval(refreshAllData, 60000);
+                }
+            } else {
+                liveIndicator.classList.add("hidden");
+                liveIndicator.classList.remove("flex");
+                if (autoRefreshTimer) {
+                    clearInterval(autoRefreshTimer);
+                    autoRefreshTimer = null;
+                }
+            }
+        }
+
+        function renderGamesToContainer(events, container) {
+            container.innerHTML = "";
+
+            if (events.length === 0) {
+                container.innerHTML = '<div class="bg-gradient-to-b from-[#111827] to-[#0b101d] border border-slate-800 rounded-2xl text-center py-12 text-slate-400">An diesem Datum sind keine NBA-Spiele angesetzt.</div>';
+                return;
+            }
+
+            const grid = document.createElement("div");
+            grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4";
+            events.forEach(event => {
+                grid.appendChild(createGameCard(event));
+            });
+            container.appendChild(grid);
+        }
+
+        function createGameCard(event) {
+            const competition = event.competitions?.[0];
+            const home = competition?.competitors?.find(c => c.homeAway === "home");
+            const away = competition?.competitors?.find(c => c.homeAway === "away");
+
+            const awayAbbr = away?.team?.abbreviation || "AWY";
+            const homeAbbr = home?.team?.abbreviation || "HME";
+            const awayColor = getTeamColor(awayAbbr);
+            const homeColor = getTeamColor(homeAbbr);
+
+            const status = event.status?.type;
+            const isLive = status?.state === "in";
+            const isCompleted = status?.completed;
+
+            const gameDate = new Date(event.date);
+            const formattedDateStr = gameDate.toLocaleDateString("de-DE", { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const formattedTimeStr = gameDate.toLocaleTimeString("de-DE", { hour: '2-digit', minute: '2-digit' }) + " Uhr";
+
+            let statusBadgeClass = "bg-sky-950/70 text-sky-300 border border-sky-700/50 font-semibold";
+            let statusText = `${formattedDateStr} • ${formattedTimeStr}`;
+
+            if (isLive) {
+                statusBadgeClass = "bg-rose-950/90 text-rose-200 border border-rose-500/80 live-dot font-extrabold";
+                statusText = `🔴 LIVE • ${status?.detail || 'In Progress'}`;
+            } else if (isCompleted) {
+                statusBadgeClass = "bg-emerald-950/80 text-emerald-300 border border-emerald-600/60 font-extrabold";
+                statusText = "FINAL";
+            }
+
+            const awayLinescores = away?.linescores || [];
+            const homeLinescores = home?.linescores || [];
+            const hasLinescores = awayLinescores.length > 0 && homeLinescores.length > 0;
+
+            let quarterTableHtml = "";
+            if (hasLinescores) {
+                const headers = awayLinescores.map((_, idx) => idx < 4 ? `Q${idx + 1}` : `OT${idx - 3}`);
+                quarterTableHtml = `
+                    <div class="pt-2.5 border-t border-slate-800/80">
+                        <table class="w-full text-[11px] text-center text-slate-300 bg-[#080c16]/70 rounded-xl overflow-hidden">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800/80">
+                                    <th class="text-left font-semibold py-1.5 px-2.5">Team</th>
+                                    ${headers.map(h => `<th class="font-semibold py-1.5">${h}</th>`).join("")}
+                                    <th class="font-bold text-[#f3d474] py-1.5 pr-2.5">T</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/50">
+                                <tr>
+                                    <td class="text-left font-bold text-slate-200 py-1.5 px-2.5 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full inline-block" style="background-color: ${awayColor}"></span>
+                                        ${awayAbbr}
+                                    </td>
+                                    ${awayLinescores.map(q => `<td class="py-1.5">${q.displayValue ?? '-'}</td>`).join("")}
+                                    <td class="font-extrabold ${away?.winner ? 'text-[#f3d474]' : 'text-white'} py-1.5 pr-2.5">${away?.score ?? '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-left font-bold text-slate-200 py-1.5 px-2.5 flex items-center gap-1.5">
+                                        <span class="w-2 h-2 rounded-full inline-block" style="background-color: ${homeColor}"></span>
+                                        ${homeAbbr}
+                                    </td>
+                                    ${homeLinescores.map(q => `<td class="py-1.5">${q.displayValue ?? '-'}</td>`).join("")}
+                                    <td class="font-extrabold ${home?.winner ? 'text-[#f3d474]' : 'text-white'} py-1.5 pr-2.5">${home?.score ?? '-'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            const card = document.createElement("div");
+            card.className = `relative overflow-hidden bg-[#101624] p-5 rounded-2xl border shadow-xl space-y-3.5 transition duration-200 hover:-translate-y-0.5 hover:border-[#d4af37]/60 ${
+                isLive ? 'live-card-glow border-rose-500/70' : 'border-slate-800/90'
+            }`;
+            card.style.backgroundImage = `linear-gradient(135deg, ${awayColor}26 0%, rgba(16, 22, 36, 0.94) 48%, ${homeColor}26 100%)`;
+
+            card.innerHTML = `
+                <!-- Team-Duell Farbbalken oben -->
+                <div class="h-1 w-full absolute top-0 left-0 flex">
+                    <div class="w-1/2 h-full" style="background: linear-gradient(90deg, ${awayColor}, transparent)"></div>
+                    <div class="w-1/2 h-full" style="background: linear-gradient(270deg, ${homeColor}, transparent)"></div>
+                </div>
+
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
+                    <span class="text-slate-300 text-xs font-semibold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full" style="background-color: ${awayColor}"></span>
+                        <span>${awayAbbr}</span>
+                        <span class="text-slate-500">@</span>
+                        <span>${homeAbbr}</span>
+                        <span class="w-2 h-2 rounded-full" style="background-color: ${homeColor}"></span>
+                        <span class="text-slate-500">• ${formattedTimeStr}</span>
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] ${statusBadgeClass}">${statusText}</span>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-[#080c16]/90 p-1.5 border flex items-center justify-center shrink-0 shadow" style="border-color: ${awayColor}66">
+                                <img src="${away?.team?.logo || ''}" class="w-full h-full object-contain" alt="Logo">
+                            </div>
+                            <div>
+                                <p class="font-bold text-white text-sm flex items-center gap-1.5">
+                                    <span>${away?.team?.displayName || 'Away'}</span>
+                                    ${away?.winner ? '<span class="text-[10px] text-[#f3d474]">★</span>' : ''}
+                                </p>
+                                <p class="text-[11px] text-slate-400">${away?.records?.[0]?.summary || ''}</p>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-black ${away?.winner ? 'text-[#f3d474]' : 'text-slate-200'}">
+                            ${away?.score !== undefined ? away.score : '-'}
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-[#080c16]/90 p-1.5 border flex items-center justify-center shrink-0 shadow" style="border-color: ${homeColor}66">
+                                <img src="${home?.team?.logo || ''}" class="w-full h-full object-contain" alt="Logo">
+                            </div>
+                            <div>
+                                <p class="font-bold text-white text-sm flex items-center gap-1.5">
+                                    <span>${home?.team?.displayName || 'Home'}</span>
+                                    ${home?.winner ? '<span class="text-[10px] text-[#f3d474]">★</span>' : ''}
+                                </p>
+                                <p class="text-[11px] text-slate-400">${home?.records?.[0]?.summary || ''}</p>
+                            </div>
+                        </div>
+                        <span class="text-2xl font-black ${home?.winner ? 'text-[#f3d474]' : 'text-slate-200'}">
+                            ${home?.score !== undefined ? home.score : '-'}
+                        </span>
+                    </div>
+                </div>
+                ${quarterTableHtml}
+            `;
+            return card;
+        }
+
+        async function loadNbaStandings() {
+            const url = "https://site.api.espn.com/apis/v2/sports/basketball/nba/standings";
+            const eastBody = document.getElementById("east-table-body");
+            const westBody = document.getElementById("west-table-body");
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const children = data.children || [];
+                let eastEntries = [];
+                let westEntries = [];
+
+                children.forEach(conf => {
+                    const name = (conf.name || "").toLowerCase();
+                    const entries = conf.standings?.entries || [];
+                    if (name.includes("east")) {
+                        eastEntries = entries;
+                    } else if (name.includes("west")) {
+                        westEntries = entries;
+                    }
+                });
+
+                renderConferenceTable(eastEntries, eastBody);
+                renderConferenceTable(westEntries, westBody);
+
+            } catch (error) {
+                console.error("Fehler beim Abrufen der NBA Standings:", error);
+                eastBody.innerHTML = '<tr><td colspan="14" class="px-4 py-6 text-center text-rose-400">Fehler beim Laden.</td></tr>';
+                westBody.innerHTML = '<tr><td colspan="14" class="px-4 py-6 text-center text-rose-400">Fehler beim Laden.</td></tr>';
+            }
+        }
+
+        function renderConferenceTable(entries, tbody) {
+            tbody.innerHTML = "";
+
+            if (!entries || entries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="14" class="px-4 py-6 text-center text-slate-500">Keine Tabellendaten gefunden.</td></tr>';
+                return;
+            }
+
+            entries.sort((a, b) => {
+                const rankA = a.stats?.find(s => s.name === "playoffSeed")?.value || 99;
+                const rankB = b.stats?.find(s => s.name === "playoffSeed")?.value || 99;
+                return rankA - rankB;
+            });
+
+            entries.forEach((entry, idx) => {
+                const team = entry.team;
+                const stats = entry.stats || [];
+
+                const getStat = (name) => {
+                    const found = stats.find(s => s.name === name || s.abbreviation === name || s.displayName === name);
+                    return found ? found.displayValue : null;
+                };
+
+                const wins = getStat("wins");
+                const losses = getStat("losses");
+                const pct = getStat("winPercent");
+                const gb = getStat("gamesBehind");
+                const home = getStat("Home");
+                const away = getStat("Road");
+                const div = getStat("vs. Div.");
+                const conf = getStat("vs. Conf.");
+                const ppg = getStat("avgPoints") || getStat("pointsFor") || getStat("PPG");
+                const oppPpg = getStat("avgPointsAgainst") || getStat("pointsAgainst") || getStat("OPP PPG");
+                
+                let diff = getStat("pointDifferential");
+                const streak = getStat("streak");
+                const l10 = getStat("L10") || getStat("lastTen") || getStat("L-10") || "-";
+
+                let diffFormatted = diff || '-';
+                let diffClass = "text-slate-300";
+                if (diff !== null && diff !== "-") {
+                    let cleanDiff = String(diff).replace(/^\+/, '');
+                    const diffNum = parseFloat(cleanDiff);
+                    if (!isNaN(diffNum)) {
+                        if (diffNum > 0) {
+                            diffFormatted = `+${cleanDiff}`;
+                            diffClass = "text-emerald-400 font-semibold";
+                        } else if (diffNum < 0) {
+                            diffFormatted = cleanDiff;
+                            diffClass = "text-rose-400 font-semibold";
+                        } else {
+                            diffFormatted = "0.0";
+                        }
+                    }
+                }
+
+                let streakBadgeClass = "text-slate-300";
+                if (streak && String(streak).startsWith("W")) {
+                    streakBadgeClass = "text-emerald-400 font-bold";
+                } else if (streak && String(streak).startsWith("L")) {
+                    streakBadgeClass = "text-rose-400 font-bold";
+                }
+
+                const teamId = team?.id;
+                const teamName = team?.displayName || 'Unbekannt';
+                const teamAbbr = team?.abbreviation || '';
+                const teamColor = getTeamColor(teamAbbr);
+                const teamLogo = team?.logos?.[0]?.href || '';
+
+                const row = document.createElement("tr");
+                let rankBadgeClass = "bg-slate-800/80 text-slate-400";
+                if (idx < 6) rankBadgeClass = "bg-[#d4af37]/20 text-[#f3d474] border border-[#d4af37]/40";
+                else if (idx < 10) rankBadgeClass = "bg-sky-500/20 text-sky-300 border border-sky-400/40";
+
+                const separatorClass = (idx === 5 || idx === 9) ? "border-b-2 border-slate-700" : "";
+                row.className = `${separatorClass} ${idx % 2 === 0 ? "bg-[#080c16]/45 hover:bg-slate-800/70 transition" : "bg-transparent hover:bg-slate-800/70 transition"}`;
+
+                row.innerHTML = `
+                    <td class="px-3 py-3 font-semibold text-white flex items-center gap-2.5">
+                        <span class="w-6 h-6 rounded-md text-xs font-extrabold flex items-center justify-center shrink-0 ${rankBadgeClass}">${idx + 1}</span>
+                        <span class="w-1 h-5 rounded-full shrink-0" style="background-color: ${teamColor}"></span>
+                        <img src="${teamLogo}" class="w-6 h-6 object-contain" alt="">
+                        <span onclick="openTeamRosterModal('${teamId}', '${teamName}', '${teamLogo}')" class="truncate max-w-[155px] cursor-pointer hover:text-[#f3d474] underline decoration-slate-700 hover:decoration-[#d4af37] transition">${teamName} 🔍</span>
+                    </td>
+                    <td class="px-2 py-3 text-center font-bold text-emerald-400">${wins || '-'}</td>
+                    <td class="px-2 py-3 text-center font-bold text-rose-400">${losses || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-200 font-medium">${pct || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-400">${gb || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${home || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${away || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${div || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${conf || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${ppg || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${oppPpg || '-'}</td>
+                    <td class="px-2 py-3 text-center text-xs ${diffClass}">${diffFormatted}</td>
+                    <td class="px-2 py-3 text-center text-xs ${streakBadgeClass}">${streak || '-'}</td>
+                    <td class="px-2 py-3 text-center text-slate-300 text-xs">${l10}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            registerPushServiceWorker();
+            selectDateAndLoad(getRelativeIsoDate(-1));
+            loadNbaStandings();
+        });
+    </script>
+</body>
+</html>
