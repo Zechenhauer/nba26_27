@@ -8,7 +8,8 @@ self.addEventListener('push', function(event) {
         icon: DEFAULT_ICON,
         badge: DEFAULT_ICON,
         url: './',
-        eventKey: 'nba-push'
+        eventKey: '',
+        tag: ''
     };
 
     if (event.data) {
@@ -20,11 +21,13 @@ self.addEventListener('push', function(event) {
         }
     }
 
+    const notificationTag = data.tag || data.eventKey || `nba_${Date.now()}`;
+
     const options = {
         body: data.body,
         icon: data.icon || DEFAULT_ICON,
         badge: data.badge || data.icon || DEFAULT_ICON,
-        tag: data.eventKey || 'nba-push',
+        tag: notificationTag,
         renotify: true,
         vibrate: [200, 100, 200],
         data: {
